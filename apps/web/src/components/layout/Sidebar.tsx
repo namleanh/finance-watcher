@@ -1,0 +1,74 @@
+'use client';
+
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { LayoutDashboard, ArrowLeftRight, PieChart, Target, ChevronLeft, ChevronRight, Moon, Sun, Wallet } from 'lucide-react';
+import { useTheme } from '@/context/ThemeContext';
+
+const NAV_ITEMS = [
+  { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/transactions', icon: ArrowLeftRight, label: 'Giao dịch' },
+  { href: '/portfolio', icon: PieChart, label: 'Đầu tư' },
+  { href: '/goals', icon: Target, label: 'Mục tiêu' },
+];
+
+export default function Sidebar() {
+  const pathname = usePathname();
+  const { theme, toggleTheme } = useTheme();
+  const [collapsed, setCollapsed] = useState(false);
+
+  return (
+    <aside className={`relative flex flex-col h-screen transition-all duration-300 ${collapsed ? 'w-16' : 'w-56'} bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-700/50 shrink-0`}>
+      {/* Logo */}
+      <div className={`flex items-center gap-3 px-4 py-5 ${collapsed ? 'justify-center' : ''}`}>
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0">
+          <Wallet size={16} className="text-white" />
+        </div>
+        {!collapsed && <span className="font-bold text-slate-900 dark:text-white text-sm tracking-wide">FinanceWatcher</span>}
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 px-2 space-y-1">
+        {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
+          const active = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group
+                ${active
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                  : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                }
+                ${collapsed ? 'justify-center' : ''}
+              `}
+            >
+              <Icon size={18} className="shrink-0" />
+              {!collapsed && <span>{label}</span>}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Bottom controls */}
+      <div className="p-2 space-y-1">
+        <button
+          onClick={toggleTheme}
+          className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all ${collapsed ? 'justify-center' : ''}`}
+        >
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          {!collapsed && <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
+        </button>
+      </div>
+
+      {/* Collapse toggle */}
+      <button
+        onClick={() => setCollapsed(c => !c)}
+        className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 hover:text-slate-900 dark:hover:text-white transition-all z-10"
+      >
+        {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
+      </button>
+    </aside>
+  );
+}

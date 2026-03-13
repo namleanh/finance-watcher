@@ -1,0 +1,7 @@
+{
+  "name": "@finance-watcher/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared types and constants for Finance Watcher",
+  "main": "index.ts"
+}

@@ -1,0 +1,125 @@
+import { Transaction, PortfolioAsset, SavingsGoal, TransactionType } from './types';
+import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
+
+export function getMonthlyTransactions(
+  transactions: Transaction[],
+  year: number,
+  month: number // 0-indexed
+): Transaction[] {
+  const start = startOfMonth(new Date(year, month));
+  const end = endOfMonth(new Date(year, month));
+  return transactions.filter(t => {
+    const d = parseISO(t.date);
+    return isWithinInterval(d, { start, end });
+  });
+}
+
+export function getTotalByType(transactions: Transaction[], type: TransactionType): number {
+  return transactions
+    .filter(t => t.type === type)
+    .reduce((sum, t) => sum + t.amount, 0);
+}
+
+export function getNetWorthHistory(
+  transactions: Transaction[],
+  assets: PortfolioAsset[],
+  year: number
+): { month: string; netWorth: number }[] {
+  const result: { month: string; netWorth: number }[] = [];
+  const now = new Date();
+  const currentMonth = now.getMonth();
+
+  let runningNet = 0;
+  for (let m = 0; m <= 11; m++) {
+    if (year === now.getFullYear() && m > currentMonth) break;
+    const txns = getMonthlyTransactions(transactions, year, m);
+    txns.forEach(t => {
+      if (t.type === 'income') runningNet += t.amount;
+      if (t.type === 'expense') runningNet -= t.amount;
+      if (t.type === 'saving') runningNet += t.amount;
+      if (t.type === 'investment') runningNet += t.amount;
+    });
+    result.push({ month: format(new Date(year, m), 'MMM'), netWorth: runningNet });
+  }
+  return result;
+}
+
+export function getSpendingByCategory(
+  transactions: Transaction[],
+  year: number,
+  month: number
+): { name: string; value: number; color: string }[] {
+  const monthly = getMonthlyTransactions(transactions, year, month);
+  const expenses = monthly.filter(t => t.type === 'expense');
+
+  const map: Record<string, number> = {};
+  expenses.forEach(t => {
+    map[t.category] = (map[t.category] || 0) + t.amount;
+  });
+
+  const COLORS = [
+    '#f59e0b', '#fb923c', '#ef4444', '#e11d48',
+    '#7c3aed', '#4f46e5', '#0891b2', '#64748b',
+  ];
+
+  return Object.entries(map).map(([name, value], i) => ({
+    name,
+    value,
+    color: COLORS[i % COLORS.length],
+  }));
+}
+
+export function getPortfolioSummary(assets: PortfolioAsset[]) {
+  const totalCost = assets.reduce((s, a) => s + a.costBasis * a.units, 0);
+  const totalValue = assets.reduce((s, a) => s + a.currentPrice * a.units, 0);
+  const pnl = totalValue - totalCost;
+  const pnlPct = totalCost > 0 ? (pnl / totalCost) * 100 : 0;
+  return { totalCost, totalValue, pnl, pnlPct };
+}
+
+export function getGoalProgress(goal: SavingsGoal): number {
+  if (goal.targetAmount <= 0) return 0;
+  return Math.min((goal.currentAmount / goal.targetAmount) * 100, 100);
+}
+
+export function getDashboardSummary(state: { transactions: Transaction[], portfolioAssets: PortfolioAsset[], savingsGoals: SavingsGoal[] }) {
+  const now = new Date();
+  const thisMonthTxns = getMonthlyTransactions(state.transactions, now.getFullYear(), now.getMonth());
+  const lastMonthTxns = getMonthlyTransactions(state.transactions, now.getFullYear(), now.getMonth() - 1);
+
+  const income = getTotalByType(thisMonthTxns, 'income');
+  const expense = getTotalByType(thisMonthTxns, 'expense');
+  const saving = getTotalByType(thisMonthTxns, 'saving');
+
+  const lastIncome = getTotalByType(lastMonthTxns, 'income');
+  const lastExpense = getTotalByType(lastMonthTxns, 'expense');
+
+  const { totalValue: portfolioValue, pnlPct } = getPortfolioSummary(state.portfolioAssets);
+
+  const totalIncome = getTotalByType(state.transactions, 'income');
+  const totalExpense = getTotalByType(state.transactions, 'expense');
+  const totalSaving = getTotalByType(state.transactions, 'saving');
+  const totalInvestment = getTotalByType(state.transactions, 'investment');
+  const totalGoalCurrent = state.savingsGoals.reduce((s, g) => s + g.currentAmount, 0);
+
+  // Công thức: Tổng Thu - Tổng Chi + Tiết kiệm + Đầu tư + Tiền có sẵn trong mục tiêu + Giá trị đầu tư
+  const totalAssets = totalIncome - totalExpense + totalSaving + totalInvestment + totalGoalCurrent + portfolioValue;
+
+  const incomeChange = lastIncome > 0 ? ((income - lastIncome) / lastIncome) * 100 : 0;
+  const expenseChange = lastExpense > 0 ? ((expense - lastExpense) / lastExpense) * 100 : 0;
+
+  const totalGoalTarget = state.savingsGoals.reduce((s, g) => s + g.targetAmount, 0);
+  const savingPercent = totalGoalTarget > 0 ? (totalGoalCurrent / totalGoalTarget) * 100 : 0;
+
+  return {
+    income,
+    expense,
+    saving,
+    totalAssets,
+    portfolioValue,
+    pnlPct,
+    incomeChange,
+    expenseChange,
+    savingPercent
+  };
+}
