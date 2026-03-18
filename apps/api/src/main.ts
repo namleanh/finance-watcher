@@ -12,6 +12,8 @@ async function bootstrap() {
   // CORS — allow Next.js dev server and Vercel production
   app.enableCors({
     origin: ['http://localhost:3000', 'http://localhost:3001', 'https://finance-watcher-web.vercel.app'],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     credentials: true,
   });
 
