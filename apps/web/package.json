@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "cross-env NODE_OPTIONS='--max-old-space-size=2048' next dev",
+    "prebuild": "npm install --no-save --force @tailwindcss/oxide-linux-x64-gnu@latest",
     "build": "cross-env NEXT_PRIVATE_WORKER_THREADS=2 NODE_OPTIONS='--max-old-space-size=2048' next build",
     "start": "next start",
     "lint": "eslint"
