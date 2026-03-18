@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Plus, RefreshCw } from 'lucide-react';
-import { useFinance } from '@/context/FinanceContext';
+import { useCreateTransaction } from '@/hooks/api/useTransactions';
+import { useCreateRecurring } from '@/hooks/api/useRecurring';
 import { CATEGORIES, CURRENCIES } from '@/lib/constants';
 import { toVND } from '@/lib/exchangeRate';
 import { Currency, TransactionType, RecurringInterval } from '@/lib/types';
@@ -29,7 +30,8 @@ const RECURRING_OPTIONS: { value: RecurringInterval; label: string }[] = [
 ];
 
 export default function AddTransactionModal({ open, onClose }: Props) {
-  const { addTransaction } = useFinance();
+  const { mutateAsync: createTransaction, isPending: isTxPending } = useCreateTransaction();
+  const { mutateAsync: createRecurring, isPending: isRecPending } = useCreateRecurring();
 
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
@@ -54,31 +56,56 @@ export default function AddTransactionModal({ open, onClose }: Props) {
 
   if (!open) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const num = parseFloat(amount) || 0;
     if (!num || !category) return;
 
     const amtVND = toVND(num, currency);
 
-    addTransaction({
-      type,
-      amount: amtVND,
-      originalAmount: num,
-      originalCurrency: currency,
-      category,
-      subCategory,
-      date,
-      notes,
-      recurring,
-    });
+    try {
+      await createTransaction({
+        type: type.toUpperCase() as any,
+        amount: amtVND,
+        originalAmount: num,
+        originalCurrency: currency,
+        category,
+        subCategory,
+        date: new Date(date).toISOString(),
+        notes,
+      });
 
-    // Reset
-    setAmount('');
-    setNotes('');
-    setRecurring(null);
-    onClose();
+      if (recurring) {
+        const nextD = new Date(date);
+        if (recurring === 'daily') nextD.setDate(nextD.getDate() + 1);
+        else if (recurring === 'weekly') nextD.setDate(nextD.getDate() + 7);
+        else if (recurring === 'monthly') nextD.setMonth(nextD.getMonth() + 1);
+        else if (recurring === 'yearly') nextD.setFullYear(nextD.getFullYear() + 1);
+
+        await createRecurring({
+          type: type.toUpperCase() as any,
+          amount: amtVND,
+          originalCurrency: currency,
+          category,
+          subCategory,
+          interval: recurring.toUpperCase() as any,
+          nextDate: nextD.toISOString(),
+          notes,
+        });
+      }
+
+      // Reset
+      setAmount('');
+      setNotes('');
+      setRecurring(null);
+      onClose();
+    } catch (err) {
+      console.error(err);
+      alert('Đã có lỗi xãy ra khi thêm giao dịch!');
+    }
   };
+
+  const isPending = isTxPending || isRecPending;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -225,9 +252,10 @@ export default function AddTransactionModal({ open, onClose }: Props) {
           {/* Submit */}
           <button
             type="submit"
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-semibold text-sm hover:from-indigo-600 hover:to-violet-700 transition-all shadow-lg shadow-indigo-500/20 mt-2"
+            disabled={isPending}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-semibold text-sm hover:from-indigo-600 hover:to-violet-700 transition-all shadow-lg shadow-indigo-500/20 mt-2 disabled:opacity-50"
           >
-            Thêm giao dịch
+            {isPending ? 'Đang thêm...' : 'Thêm giao dịch'}
           </button>
         </form>
       </div>

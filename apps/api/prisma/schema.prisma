@@ -1,0 +1,196 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────
+// USERS
+// ─────────────────────────────────────────────────────────
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String   @map("password_hash")
+  displayName   String?  @map("display_name")
+  baseCurrency  String   @default("VND") @map("base_currency")
+  refreshToken  String?  @map("refresh_token") // hashed
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  wallets         Wallet[]
+  transactions    Transaction[]
+  portfolioAssets PortfolioAsset[]
+  savingsGoals    SavingsGoal[]
+  recurringItems  RecurringItem[]
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────────────────
+// WALLETS  (Ví tiền)
+// ─────────────────────────────────────────────────────────
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String                         // "Tiền mặt", "MBBank"
+  type      WalletType @default(CASH)
+  balance   BigInt   @default(0)           // in base currency, stored as integer
+  currency  String   @default("VND")
+  color     String?
+  icon      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@map("wallets")
+}
+
+enum WalletType {
+  CASH
+  BANK
+  E_WALLET
+  CREDIT
+
+  @@map("wallet_type")
+}
+
+// ─────────────────────────────────────────────────────────
+// TRANSACTIONS  (Giao dịch — entity trung tâm)
+// ─────────────────────────────────────────────────────────
+model Transaction {
+  id               String          @id @default(uuid())
+  userId           String          @map("user_id")
+  walletId         String?         @map("wallet_id")
+  recurringId      String?         @map("recurring_id")
+  type             TransactionType
+  amount           BigInt                          // in base currency (VND)
+  originalAmount   BigInt          @map("original_amount")
+  originalCurrency String          @map("original_currency")
+  category         String
+  subCategory      String?         @map("sub_category")
+  date             DateTime        @db.Date
+  notes            String?
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet        Wallet?        @relation(fields: [walletId], references: [id], onDelete: SetNull)
+  recurringItem RecurringItem? @relation(fields: [recurringId], references: [id], onDelete: SetNull)
+
+  @@index([userId, date(sort: Desc)])
+  @@index([userId, type])
+  @@map("transactions")
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  SAVING
+  INVESTMENT
+
+  @@map("transaction_type")
+}
+
+// ─────────────────────────────────────────────────────────
+// PORTFOLIO ASSETS  (Danh mục đầu tư)
+// ─────────────────────────────────────────────────────────
+model PortfolioAsset {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  name          String
+  ticker        String?
+  assetType     AssetType @default(STOCK) @map("asset_type")
+  units         Decimal   @db.Decimal(18, 8)
+  costBasis     BigInt    @map("cost_basis")     // per unit, in VND
+  currentPrice  BigInt    @map("current_price")  // per unit, in VND
+  currency      String    @default("VND")
+  purchaseDate  DateTime? @map("purchase_date") @db.Date
+  notes         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("portfolio_assets")
+}
+
+enum AssetType {
+  STOCK
+  CRYPTO
+  REAL_ESTATE
+  GOLD
+  OTHER
+
+  @@map("asset_type")
+}
+
+// ─────────────────────────────────────────────────────────
+// SAVINGS GOALS  (Mục tiêu tiết kiệm)
+// ─────────────────────────────────────────────────────────
+model SavingsGoal {
+  id            String     @id @default(uuid())
+  userId        String     @map("user_id")
+  name          String
+  targetAmount  BigInt     @map("target_amount")
+  currentAmount BigInt     @default(0) @map("current_amount")
+  deadline      DateTime?  @db.Date
+  color         String?
+  icon          String?
+  status        GoalStatus @default(ACTIVE)
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("savings_goals")
+}
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+
+  @@map("goal_status")
+}
+
+// ─────────────────────────────────────────────────────────
+// RECURRING ITEMS  (Giao dịch định kỳ)
+// ─────────────────────────────────────────────────────────
+model RecurringItem {
+  id               String           @id @default(uuid())
+  userId           String           @map("user_id")
+  type             TransactionType
+  amount           BigInt
+  originalCurrency String           @map("original_currency")
+  category         String
+  subCategory      String?          @map("sub_category")
+  interval         RecurringInterval
+  nextDate         DateTime         @map("next_date") @db.Date
+  notes            String?
+  active           Boolean          @default(true)
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@map("recurring_items")
+}
+
+enum RecurringInterval {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+
+  @@map("recurring_interval")
+}

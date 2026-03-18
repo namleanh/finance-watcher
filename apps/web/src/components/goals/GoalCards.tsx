@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Plus, Trash2, Edit2, Target } from 'lucide-react';
-import { useFinance } from '@/context/FinanceContext';
+import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal } from '@/hooks/api/useGoals';
 import { formatCurrency } from '@/lib/exchangeRate';
 import { getGoalProgress } from '@/lib/financeUtils';
 import { SavingsGoal } from '@/lib/types';
@@ -10,27 +10,44 @@ import { GOAL_COLORS, GOAL_ICONS } from '@/lib/constants';
 import { format, differenceInDays, parseISO } from 'date-fns';
 
 function GoalModal({ open, onClose, editing }: { open: boolean; onClose: () => void; editing?: SavingsGoal }) {
-  const { addGoal, updateGoal } = useFinance();
+  const { mutateAsync: createGoal } = useCreateGoal();
+  const { mutateAsync: editGoal } = useUpdateGoal();
+
+  // If editing, deadline is likely ISO string, safely format it to yyyy-MM-dd for the date picker
+  const initDeadline = editing?.deadline 
+    ? format(parseISO(editing.deadline as string), 'yyyy-MM-dd') 
+    : format(new Date(new Date().getFullYear() + 1, 0, 1), 'yyyy-MM-dd');
+
   const [name, setName] = useState(editing?.name ?? '');
   const [targetAmount, setTargetAmount] = useState(editing?.targetAmount.toString() ?? '');
   const [currentAmount, setCurrentAmount] = useState(editing?.currentAmount.toString() ?? '0');
-  const [deadline, setDeadline] = useState(editing?.deadline ?? format(new Date(new Date().getFullYear() + 1, 0, 1), 'yyyy-MM-dd'));
+  const [deadline, setDeadline] = useState(initDeadline);
   const [color, setColor] = useState(editing?.color ?? GOAL_COLORS[0]);
   const [icon, setIcon] = useState(editing?.icon ?? GOAL_ICONS[0]);
 
   if (!open) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const data = {
       name,
       targetAmount: parseFloat(targetAmount) || 0,
       currentAmount: parseFloat(currentAmount) || 0,
-      deadline, color, icon,
+      deadline: new Date(deadline).toISOString(), 
+      color, 
+      icon,
     };
-    if (editing) updateGoal({ ...data, id: editing.id });
-    else addGoal(data);
-    onClose();
+    try {
+      if (editing) {
+        await editGoal({ ...data, id: editing.id });
+      } else {
+        await createGoal(data);
+      }
+      onClose();
+    } catch (err) {
+      console.error(err);
+      alert('Đã lỗi, vui lòng thử lại!');
+    }
   };
 
   return (
@@ -48,10 +65,12 @@ function GoalModal({ open, onClose, editing }: { open: boolean; onClose: () => v
               <label className="text-xs text-slate-400 block mb-1">Mục tiêu (₫)</label>
               <input type="number" value={targetAmount} onChange={e => setTargetAmount(e.target.value)} required placeholder="1000000000" className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
-            <div>
-              <label className="text-xs text-slate-400 block mb-1">Đã tiết kiệm (₫)</label>
-              <input type="number" value={currentAmount} onChange={e => setCurrentAmount(e.target.value)} placeholder="0" className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            </div>
+            {editing && (
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Đã tiết kiệm (₫)</label>
+                <input type="number" value={currentAmount} onChange={e => setCurrentAmount(e.target.value)} placeholder="0" className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+            )}
           </div>
           <div>
             <label className="text-xs text-slate-400 block mb-1">Hạn chót</label>
@@ -89,16 +108,26 @@ function GoalModal({ open, onClose, editing }: { open: boolean; onClose: () => v
 }
 
 export default function GoalCards() {
-  const { state, deleteGoal } = useFinance();
+  const { data: goals = [], isLoading } = useGoals();
+  const { mutate: deleteGoal } = useDeleteGoal();
+  
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<SavingsGoal | undefined>();
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-16">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-semibold text-white">Mục tiêu tiết kiệm</h2>
-          <p className="text-xs text-slate-400">{state.savingsGoals.length} mục tiêu đang theo dõi</p>
+          <p className="text-xs text-slate-400">{goals.length} mục tiêu đang theo dõi</p>
         </div>
         <button
           onClick={() => { setEditing(undefined); setShowModal(true); }}
@@ -108,7 +137,7 @@ export default function GoalCards() {
         </button>
       </div>
 
-      {state.savingsGoals.length === 0 ? (
+      {goals.length === 0 ? (
         <div className="rounded-2xl bg-slate-800/60 border border-slate-700/50 flex flex-col items-center justify-center py-20 text-slate-500">
           <Target size={48} className="mb-4 opacity-30" />
           <p className="font-medium text-slate-400">Chưa có mục tiêu nào</p>
@@ -116,9 +145,9 @@ export default function GoalCards() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {state.savingsGoals.map(goal => {
+          {goals.map((goal: any) => {
             const progress = getGoalProgress(goal);
-            const daysLeft = differenceInDays(parseISO(goal.deadline), new Date());
+            const daysLeft = goal.deadline ? differenceInDays(parseISO(goal.deadline), new Date()) : 0;
             return (
               <div key={goal.id} className="rounded-2xl bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 p-5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-all group">
                 <div className="flex items-start justify-between mb-4">
@@ -135,7 +164,12 @@ export default function GoalCards() {
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
                     <button onClick={() => { setEditing(goal); setShowModal(true); }} className="p-1 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"><Edit2 size={12} /></button>
-                    <button onClick={() => deleteGoal(goal.id)} className="p-1 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"><Trash2 size={12} /></button>
+                    <button 
+                      onClick={() => {
+                        if (confirm('Bạn có chắc muốn xóa mục tiêu này?')) deleteGoal(goal.id);
+                      }} 
+                      className="p-1 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"><Trash2 size={12} />
+                    </button>
                   </div>
                 </div>
 
@@ -157,7 +191,7 @@ export default function GoalCards() {
                 </div>
 
                 <div className="mt-3 pt-3 border-t border-slate-700/50 flex justify-between text-xs text-slate-400">
-                  <span>Hạn: {format(parseISO(goal.deadline), 'dd/MM/yyyy')}</span>
+                  <span>Hạn: {goal.deadline ? format(parseISO(goal.deadline), 'dd/MM/yyyy') : 'Không hạn'}</span>
                   <span style={{ color: goal.color }}>
                     Cần thêm {formatCurrency(Math.max(0, goal.targetAmount - goal.currentAmount), 'VND', true)}
                   </span>
@@ -168,7 +202,10 @@ export default function GoalCards() {
         </div>
       )}
 
-      <GoalModal open={showModal} onClose={() => setShowModal(false)} editing={editing} />
+      {/* Force remount modal strictly to clear state */}
+      {showModal && (
+        <GoalModal open={showModal} onClose={() => setShowModal(false)} editing={editing} />
+      )}
     </div>
   );
 }

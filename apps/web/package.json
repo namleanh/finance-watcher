@@ -3,13 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "cross-env NODE_OPTIONS='--max-old-space-size=2048' next dev",
+    "build": "cross-env NEXT_PRIVATE_WORKER_THREADS=2 NODE_OPTIONS='--max-old-space-size=2048' next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.90.21",
+    "@tanstack/react-query-devtools": "^5.91.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "axios": "^1.13.6",
+    "cross-env": "^10.1.0",
     "date-fns": "^4.1.0",
+    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.577.0",
     "next": "16.1.6",
     "react": "19.2.3",

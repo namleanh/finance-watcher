@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { useFinance } from '@/context/FinanceContext';
-import { getSpendingByCategory } from '@/lib/financeUtils';
+import { useSpendingByCategory } from '@/hooks/api/useAnalytics';
 import { formatCurrency } from '@/lib/exchangeRate';
 
 const RADIAN = Math.PI / 180;
@@ -20,13 +19,12 @@ const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent
 };
 
 export default function SpendingPieChart() {
-  const { state } = useFinance();
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth());
   const [year] = useState(now.getFullYear());
 
-  const data = getSpendingByCategory(state.transactions, year, month);
-  const total = data.reduce((s, d) => s + d.value, 0);
+  const { data = [], isLoading } = useSpendingByCategory(year, month + 1);
+  const total = data.reduce((s: any, d: any) => s + d.value, 0);
 
   const monthNames = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
 
@@ -46,7 +44,11 @@ export default function SpendingPieChart() {
         </select>
       </div>
 
-      {data.length === 0 ? (
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center h-48">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        </div>
+      ) : data.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-48 text-slate-500">
           <div className="text-4xl mb-2">📊</div>
           <p className="text-sm">Chưa có dữ liệu chi tiêu</p>
@@ -64,7 +66,7 @@ export default function SpendingPieChart() {
               innerRadius={40}
               dataKey="value"
             >
-              {data.map((entry, index) => (
+              {data.map((entry: any, index: number) => (
                 <Cell key={index} fill={entry.color} stroke="transparent" />
               ))}
             </Pie>

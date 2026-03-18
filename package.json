@@ -7,10 +7,20 @@
     "dev:web": "npm run dev --workspace=@finance-watcher/web",
     "build:web": "npm run build --workspace=@finance-watcher/web",
     "dev:api": "npm run dev --workspace=@finance-watcher/api",
+    "build:api": "npm run build --workspace=@finance-watcher/api",
+    "prisma:generate": "npm run prisma:generate --workspace=@finance-watcher/api",
+    "prisma:migrate": "npm run prisma:migrate --workspace=@finance-watcher/api",
+    "prisma:studio": "npm run prisma:studio --workspace=@finance-watcher/api",
     "install:all": "npm install"
   },
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "devDependencies": {
+    "prisma": "^7.5.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.5.0"
+  }
 }

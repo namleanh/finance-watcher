@@ -2,17 +2,15 @@
 
 import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
-import { useFinance } from '@/context/FinanceContext';
-import { getNetWorthHistory } from '@/lib/financeUtils';
+import { useNetWorthHistory } from '@/hooks/api/useAnalytics';
 import { formatCurrency } from '@/lib/exchangeRate';
 
 export default function NetWorthLineChart() {
-  const { state } = useFinance();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
 
-  const data = getNetWorthHistory(state.transactions, state.portfolioAssets, year);
-
+  const { data: response, isLoading } = useNetWorthHistory(year);
+  const data = response?.data || [];
   const years = [now.getFullYear() - 1, now.getFullYear()];
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -42,7 +40,12 @@ export default function NetWorthLineChart() {
           {years.map(y => <option key={y} value={y}>{y}</option>)}
         </select>
       </div>
-      {data.length === 0 ? (
+      
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center h-48">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        </div>
+      ) : data.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-48 text-slate-500">
           <div className="text-4xl mb-2">📈</div>
           <p className="text-sm">Chưa có dữ liệu giao dịch</p>
@@ -81,3 +84,4 @@ export default function NetWorthLineChart() {
     </div>
   );
 }
+
