@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, ArrowLeftRight, PieChart, Target, ChevronLeft, ChevronRight, Moon, Sun, Wallet } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
+import { useRouter } from 'next/navigation';
 
 const NAV_ITEMS = [
   { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -17,11 +18,12 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
+  const router = useRouter();
 
   return (
     <aside className={`relative flex flex-col h-screen transition-all duration-300 ${collapsed ? 'w-16' : 'w-56'} bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-700/50 shrink-0`}>
       {/* Logo */}
-      <div className={`flex items-center gap-3 px-4 py-5 ${collapsed ? 'justify-center' : ''}`}>
+      <div onClick={() => router.push('/')} className={`flex items-center gap-3 px-4 py-5 transition-transform duration-100 active:scale-102 cursor-pointer ${collapsed ? 'justify-center' : ''}`}>
         <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0">
           <Wallet size={16} className="text-white" />
         </div>

@@ -10,9 +10,17 @@ html.dark {
 
 * {
   box-sizing: border-box;
+  cursor: default;
+  user-select: none;
 }
 
-button, [role="button"], a {
+input, textarea, select, [contenteditable] {
+  cursor: text;
+  user-select: text;
+}
+
+button, [role="button"], a, .cursor-pointer,
+button *, [role="button"] *, a *, .cursor-pointer * {
   cursor: pointer;
 }
 
