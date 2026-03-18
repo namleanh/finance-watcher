@@ -9,11 +9,11 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix('api/v1');
 
-  // CORS — allow Next.js dev server and Vercel production
+  // CORS — allow all origins for now to bypass Render/Vercel network mangling
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:3001', 'https://finance-watcher-web.vercel.app'],
+    origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    allowedHeaders: 'Content-Type, Accept, Authorization',
     credentials: true,
   });
 
