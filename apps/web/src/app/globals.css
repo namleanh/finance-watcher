@@ -4,6 +4,10 @@
   --font-sans: 'Inter', sans-serif;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 html.dark {
   color-scheme: dark;
 }
