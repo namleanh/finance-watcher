@@ -3,6 +3,17 @@ export type Currency = 'VND' | 'USD' | 'MYR';
 export type TransactionType = 'income' | 'expense' | 'saving' | 'investment';
 
 export type RecurringInterval = 'daily' | 'weekly' | 'monthly' | 'yearly' | null;
+export type WalletType = 'CASH' | 'BANK' | 'E_WALLET' | 'CREDIT';
+
+export interface Wallet {
+  id: string;
+  name: string;
+  type: WalletType;
+  balance: number;
+  currency: Currency;
+  color?: string;
+  icon?: string;
+}
 
 export interface Transaction {
   id: string;
@@ -58,6 +69,7 @@ export interface FinanceState {
   portfolioAssets: PortfolioAsset[];
   savingsGoals: SavingsGoal[];
   recurringItems: RecurringItem[];
+  wallets: Wallet[];
   baseCurrency: Currency;
 }
 

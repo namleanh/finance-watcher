@@ -14,7 +14,7 @@ export class AnalyticsService {
     const lastMonthStart = startOfMonth(new Date(now.getFullYear(), now.getMonth() - 1));
     const lastMonthEnd = endOfMonth(new Date(now.getFullYear(), now.getMonth() - 1));
 
-    const [thisMonthTxns, lastMonthTxns, allTxns, portfolioAssets, savingsGoals] = await Promise.all([
+    const [thisMonthTxns, lastMonthTxns, allTxns, portfolioAssets, savingsGoals, wallets] = await Promise.all([
       this.prisma.transaction.findMany({
         where: { userId, date: { gte: thisMonthStart, lte: thisMonthEnd } },
         select: { type: true, amount: true },
@@ -34,6 +34,10 @@ export class AnalyticsService {
       this.prisma.savingsGoal.findMany({
         where: { userId },
         select: { currentAmount: true, targetAmount: true },
+      }),
+      this.prisma.wallet.findMany({
+        where: { userId },
+        select: { balance: true },
       }),
     ]);
 
@@ -55,11 +59,12 @@ export class AnalyticsService {
     const portfolioValue = portfolioAssets.reduce(
       (s, a) => s + Number(a.currentPrice) * Number(a.units), 0);
 
+    const totalWalletBalance = wallets.reduce((s, w) => s + Number(w.balance), 0);
     const totalGoalCurrent = savingsGoals.reduce((s, g) => s + Number(g.currentAmount), 0);
     const totalGoalTarget = savingsGoals.reduce((s, g) => s + Number(g.targetAmount), 0);
 
-    const totalAssets = totalIncome - totalExpense + totalSaving + totalInvestment
-      + totalGoalCurrent + portfolioValue;
+    // Công thức mới: Tổng Ví + Tổng Tài sản danh mục + (Mục tiêu tiết kiệm nếu có)
+    const totalAssets = totalWalletBalance + portfolioValue + totalGoalCurrent;
 
     return {
       thisMonth: {

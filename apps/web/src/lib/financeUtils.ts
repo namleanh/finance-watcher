@@ -16,7 +16,7 @@ export function getMonthlyTransactions(
 
 export function getTotalByType(transactions: Transaction[], type: TransactionType): number {
   return transactions
-    .filter(t => t.type === type)
+    .filter(t => t.type.toLowerCase() === type.toLowerCase())
     .reduce((sum, t) => sum + t.amount, 0);
 }
 
@@ -82,7 +82,12 @@ export function getGoalProgress(goal: SavingsGoal): number {
   return Math.min((goal.currentAmount / goal.targetAmount) * 100, 100);
 }
 
-export function getDashboardSummary(state: { transactions: Transaction[], portfolioAssets: PortfolioAsset[], savingsGoals: SavingsGoal[] }) {
+export function getDashboardSummary(state: { 
+  transactions: Transaction[], 
+  portfolioAssets: PortfolioAsset[], 
+  savingsGoals: SavingsGoal[],
+  wallets: any[] 
+}) {
   const now = new Date();
   const thisMonthTxns = getMonthlyTransactions(state.transactions, now.getFullYear(), now.getMonth());
   const lastMonthTxns = getMonthlyTransactions(state.transactions, now.getFullYear(), now.getMonth() - 1);
@@ -101,9 +106,10 @@ export function getDashboardSummary(state: { transactions: Transaction[], portfo
   const totalSaving = getTotalByType(state.transactions, 'saving');
   const totalInvestment = getTotalByType(state.transactions, 'investment');
   const totalGoalCurrent = state.savingsGoals.reduce((s, g) => s + g.currentAmount, 0);
+  const totalWalletBalance = state.wallets.reduce((s, w) => s + w.balance, 0);
 
-  // Công thức: Tổng Thu - Tổng Chi + Tiết kiệm + Đầu tư + Tiền có sẵn trong mục tiêu + Giá trị đầu tư
-  const totalAssets = totalIncome - totalExpense + totalSaving + totalInvestment + totalGoalCurrent + portfolioValue;
+  // Công thức: Tổng Ví + Mục tiêu tiết kiệm + Giá trị đầu tư
+  const totalAssets = totalWalletBalance + portfolioValue + totalGoalCurrent;
 
   const incomeChange = lastIncome > 0 ? ((income - lastIncome) / lastIncome) * 100 : 0;
   const expenseChange = lastExpense > 0 ? ((expense - lastExpense) / lastExpense) * 100 : 0;
