@@ -13,7 +13,7 @@ export default function DashboardPage() {
   const [showModal, setShowModal] = useState(false);
 
   return (
-    <div className="relative min-h-full pb-20">
+    <div className="relative min-h-full pb-32">
       <Header title="Dashboard" subtitle="Tổng quan tài chính của bạn" />
 
       <div className="p-4 sm:p-6 space-y-6">

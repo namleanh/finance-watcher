@@ -181,9 +181,10 @@ export default function TransactionTable() {
                         onClick={() => {
                           if (confirm('Bạn có chắc muốn xóa giao dịch này?')) deleteTx(t.id);
                         }}
-                        className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-rose-400 transition-all p-1"
+                        className="text-slate-400 hover:text-rose-500 transition-all p-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                        title="Xóa giao dịch"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={16} />
                       </button>
                     </td>
                   </tr>
