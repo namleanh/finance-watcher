@@ -36,11 +36,14 @@ export function formatCurrency(
     amount = 0;
   }
 
+  // Compact logic disabled per user request to show exact digits
+  /*
   if (compact && Math.abs(amount) >= 1_000_000) {
     const val = amount / 1_000_000;
     const formatted = val % 1 === 0 ? val.toFixed(0) : val.toFixed(1);
     return `${formatted}M`;
   }
+  */
 
   const symbols: Record<Currency, string> = { VND: '₫', USD: '$', MYR: 'RM' };
   const sym = symbols[currency];
