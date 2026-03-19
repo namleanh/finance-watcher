@@ -62,8 +62,8 @@ export default function SpendingPieChart() {
               cy="50%"
               labelLine={false}
               label={renderCustomLabel}
-              outerRadius={100}
-              innerRadius={40}
+              outerRadius="80%"
+              innerRadius="40%"
               dataKey="value"
             >
               {data.map((entry: any, index: number) => (

@@ -60,13 +60,13 @@ export default function NetWorthLineChart() {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-            <XAxis dataKey="month" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
+            <XAxis dataKey="month" tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} />
             <YAxis
-              tick={{ fill: '#94a3b8', fontSize: 10 }}
+              tick={{ fill: '#94a3b8', fontSize: 9 }}
               axisLine={false}
               tickLine={false}
               tickFormatter={v => formatCurrency(v, 'VND', true)}
-              width={60}
+              width={50}
             />
             <Tooltip content={<CustomTooltip />} />
             <Area

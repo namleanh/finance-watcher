@@ -108,31 +108,31 @@ export default function AddTransactionModal({ open, onClose }: Props) {
   const isPending = isTxPending || isRecPending;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full h-full sm:h-auto sm:max-w-md bg-white dark:bg-slate-900 border-x sm:border border-slate-200 dark:border-slate-700 sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
           <div className="flex items-center gap-2">
             <Plus size={18} className="text-indigo-500 dark:text-indigo-400" />
-            <h2 className="font-semibold text-slate-900 dark:text-white">Thêm giao dịch</h2>
+            <h2 className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base">Thêm giao dịch</h2>
           </div>
-          <button onClick={onClose} className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
-            <X size={18} />
+          <button onClick={onClose} className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors p-1">
+            <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5 overflow-y-auto max-h-[calc(100vh-64px)] sm:max-h-[85vh]">
           {/* Type selector */}
           <div>
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 block">Loại giao dịch</label>
+            <label className="text-[10px] sm:text-xs font-medium text-slate-400 uppercase tracking-wider mb-2.5 block">Loại giao dịch</label>
             <div className="grid grid-cols-2 gap-2">
               {TYPE_OPTIONS.map(opt => (
                 <button
                   key={opt.value}
                   type="button"
                   onClick={() => setType(opt.value)}
-                  className={`py-2.5 px-3 rounded-xl text-sm font-medium transition-all
+                  className={`py-2 px-3 rounded-xl text-xs sm:text-sm font-medium transition-all
                     ${type === opt.value
                       ? `bg-gradient-to-r ${opt.color} text-white shadow-lg`
                       : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white dark:border-slate-700'
@@ -146,7 +146,7 @@ export default function AddTransactionModal({ open, onClose }: Props) {
 
           {/* Amount + Currency */}
           <div>
-            <label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 block">Số tiền</label>
+            <label className="text-[10px] sm:text-xs font-medium text-slate-400 uppercase tracking-wider mb-2.5 block">Số tiền</label>
             <div className="flex gap-2">
               <div className="flex-1 relative">
                 <input
@@ -161,7 +161,7 @@ export default function AddTransactionModal({ open, onClose }: Props) {
               <select
                 value={currency}
                 onChange={e => setCurrency(e.target.value as Currency)}
-                className="bg-slate-50 border border-slate-200 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-[80px]"
+                className="bg-slate-50 border border-slate-200 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 rounded-xl px-2 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-[70px] sm:min-w-[80px]"
               >
                 {CURRENCIES.map(c => (
                   <option key={c.code} value={c.code}>{c.symbol} {c.code}</option>
@@ -169,7 +169,7 @@ export default function AddTransactionModal({ open, onClose }: Props) {
               </select>
             </div>
             {currency !== 'VND' && amount && !isNaN(parseFloat(amount)) && (
-              <p className="text-xs text-slate-500 mt-1.5 flex items-center gap-1">
+              <p className="text-[10px] text-slate-500 mt-1.5 flex items-center gap-1">
                 <RefreshCw size={10} />
                 ≈ {(parseFloat(amount) * (currency === 'USD' ? 25400 : 5404)).toLocaleString('vi-VN')} ₫
               </p>
@@ -177,26 +177,26 @@ export default function AddTransactionModal({ open, onClose }: Props) {
           </div>
 
           {/* Category + SubCategory */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 block">Danh mục</label>
+              <label className="text-[10px] sm:text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 block">Danh mục</label>
               <select
                 value={category}
                 onChange={e => setCategory(e.target.value)}
                 required
-                className="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="">Chọn danh mục</option>
                 {cats.map(c => <option key={c.label} value={c.label}>{c.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 block">Phân mục</label>
+              <label className="text-[10px] sm:text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 block">Phân mục</label>
               <select
                 value={subCategory}
                 onChange={e => setSubCategory(e.target.value)}
                 disabled={!selectedCat}
-                className="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-40"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-40"
               >
                 <option value="">Tất cả</option>
                 {selectedCat?.subCategories.map(s => <option key={s} value={s}>{s}</option>)}
@@ -204,43 +204,45 @@ export default function AddTransactionModal({ open, onClose }: Props) {
             </div>
           </div>
 
-          {/* Date */}
-          <div>
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 block">Ngày</label>
-            <input
-              type="date"
-              value={date}
-              onChange={e => setDate(e.target.value)}
-              required
-              className="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-3">
+            {/* Date */}
+            <div>
+              <label className="text-[10px] sm:text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 block">Ngày</label>
+              <input
+                type="date"
+                value={date}
+                onChange={e => setDate(e.target.value)}
+                required
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
 
-          {/* Notes */}
-          <div>
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 block">Ghi chú</label>
-            <input
-              type="text"
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="Tuỳ chọn..."
-              className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-slate-500"
-            />
+            {/* Notes */}
+            <div>
+              <label className="text-[10px] sm:text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 block">Ghi chú</label>
+              <input
+                type="text"
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                placeholder="Tuỳ chọn..."
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-slate-400 dark:placeholder-slate-500"
+              />
+            </div>
           </div>
 
           {/* Recurring */}
           <div>
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 block">Giao dịch định kỳ</label>
-            <div className="flex flex-wrap gap-2">
+            <label className="text-[10px] sm:text-xs font-medium text-slate-400 uppercase tracking-wider mb-2.5 block">Giao dịch định kỳ</label>
+            <div className="flex overflow-x-auto pb-2 gap-2 scrollbar-none no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {RECURRING_OPTIONS.map(opt => (
                 <button
                   key={String(opt.value)}
                   type="button"
                   onClick={() => setRecurring(opt.value)}
-                  className={`py-1.5 px-3 rounded-lg text-xs font-medium transition-all
+                  className={`py-1.5 px-2.5 rounded-lg text-[10px] sm:text-xs font-medium transition-all whitespace-nowrap flex-shrink-0
                     ${recurring === opt.value
                       ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700'
+                      : 'bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white border border-slate-200 dark:border-slate-700'
                     }`}
                 >
                   {opt.label}
@@ -250,13 +252,15 @@ export default function AddTransactionModal({ open, onClose }: Props) {
           </div>
 
           {/* Submit */}
-          <button
-            type="submit"
-            disabled={isPending}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-semibold text-sm hover:from-indigo-600 hover:to-violet-700 transition-all shadow-lg shadow-indigo-500/20 mt-2 disabled:opacity-50"
-          >
-            {isPending ? 'Đang thêm...' : 'Thêm giao dịch'}
-          </button>
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={isPending}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-semibold text-sm hover:from-indigo-600 hover:to-violet-700 transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50"
+            >
+              {isPending ? 'Đang thêm...' : 'Thêm giao dịch'}
+            </button>
+          </div>
         </form>
       </div>
     </div>

@@ -11,7 +11,7 @@ export default function OverviewCards() {
 
   if (isLoading || !stats) {
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
           <div key={i} className="h-28 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 animate-pulse"></div>
         ))}
@@ -20,7 +20,7 @@ export default function OverviewCards() {
   }
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <StatCard
         title="Tổng tài sản"
         value={formatCurrency(stats.totalAssets, 'VND', true)}
