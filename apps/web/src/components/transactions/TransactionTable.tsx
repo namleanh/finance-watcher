@@ -7,6 +7,7 @@ import { vi } from 'date-fns/locale';
 import { useTransactions, useDeleteTransaction } from '@/hooks/api/useTransactions';
 import { CATEGORIES } from '@/lib/constants';
 import { formatCurrency } from '@/lib/exchangeRate';
+import DeleteConfirmModal from '@/components/shared/DeleteConfirmModal';
 
 const TYPE_COLORS: Record<string, string> = {
   INCOME: 'text-emerald-400 bg-emerald-400/10',
@@ -30,6 +31,7 @@ export default function TransactionTable() {
   const [dateTo, setDateTo] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: response, isLoading } = useTransactions({
     page,
@@ -40,7 +42,15 @@ export default function TransactionTable() {
     ...(dateTo && { endDate: dateTo }),
   });
 
-  const { mutate: deleteTx } = useDeleteTransaction();
+  const { mutate: deleteTx, isPending: isDeleting } = useDeleteTransaction();
+
+  const handleDelete = () => {
+    if (deleteId) {
+      deleteTx(deleteId, {
+        onSuccess: () => setDeleteId(null),
+      });
+    }
+  };
 
   const transactions = response?.data || [];
   const meta = response?.meta || { total: 0, totalPages: 1 };
@@ -178,9 +188,7 @@ export default function TransactionTable() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button
-                        onClick={() => {
-                          if (confirm('Bạn có chắc muốn xóa giao dịch này?')) deleteTx(t.id);
-                        }}
+                        onClick={() => setDeleteId(t.id)}
                         className="text-slate-400 hover:text-rose-500 transition-all p-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20"
                         title="Xóa giao dịch"
                       >
@@ -220,9 +228,7 @@ export default function TransactionTable() {
                     </p>
                   </div>
                   <button
-                    onClick={() => {
-                      if (confirm('Bạn có chắc muốn xóa giao dịch này?')) deleteTx(t.id);
-                    }}
+                    onClick={() => setDeleteId(t.id)}
                     className="p-1.5 text-slate-400 hover:text-rose-500 transition-colors"
                   >
                     <Trash2 size={14} />
@@ -256,6 +262,13 @@ export default function TransactionTable() {
           </div>
         </>
       )}
+
+      <DeleteConfirmModal
+        open={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDelete}
+        isLoading={isDeleting}
+      />
     </div>
   );
 }
