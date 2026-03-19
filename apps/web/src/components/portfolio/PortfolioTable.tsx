@@ -129,19 +129,19 @@ export default function PortfolioTable() {
   return (
     <div className="space-y-4">
       {/* Summary row */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: 'Tổng giá vốn', value: formatCurrency(summary.totalCost, 'VND', true), color: 'text-slate-200' },
-          { label: 'Tổng thị giá', value: formatCurrency(summary.totalValue, 'VND', true), color: 'text-indigo-400' },
+          { label: 'Tổng giá vốn', value: formatCurrency(summary.totalCost, 'VND', true), color: 'text-slate-900 dark:text-slate-200' },
+          { label: 'Tổng thị giá', value: formatCurrency(summary.totalValue, 'VND', true), color: 'text-indigo-600 dark:text-indigo-400' },
           {
             label: 'Lãi / Lỗ (P&L)',
             value: `${summary.pnl >= 0 ? '+' : ''}${formatCurrency(Math.abs(summary.pnl), 'VND', true)} (${summary.pnlPct.toFixed(2)}%)`,
-            color: summary.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400',
+            color: summary.pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400',
           },
         ].map(card => (
           <div key={card.label} className="rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 px-4 py-3">
-            <p className="text-xs text-slate-500 dark:text-slate-400">{card.label}</p>
-            <p className={`text-lg font-bold ${card.color.replace('text-slate-200', 'text-slate-900 dark:text-slate-200')}`}>{card.value}</p>
+            <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">{card.label}</p>
+            <p className={`text-lg sm:text-xl font-bold ${card.color}`}>{card.value}</p>
           </div>
         ))}
       </div>
@@ -164,63 +164,115 @@ export default function PortfolioTable() {
             <p className="text-sm mt-1 text-slate-500">Thêm cổ phiếu, crypto, hay bất động sản</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700/50">
-                  <th className="px-4 py-3 text-left">Tài sản</th>
-                  <th className="px-4 py-3 text-right">SL</th>
-                  <th className="px-4 py-3 text-right">Giá vốn</th>
-                  <th className="px-4 py-3 text-right">Giá hiện tại</th>
-                  <th className="px-4 py-3 text-right">Thị giá</th>
-                  <th className="px-4 py-3 text-right">P&L</th>
-                  <th className="px-4 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-700/30">
-                {assets.map(a => {
-                  const cost = a.costBasis * a.units;
-                  const value = a.currentPrice * a.units;
-                  const pnl = value - cost;
-                  const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
-                  return (
-                    <tr key={a.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors group">
-                      <td className="px-4 py-3">
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900 dark:text-white">{a.name}</p>
-                          {a.ticker && <p className="text-xs text-slate-500 dark:text-slate-400">{a.ticker}</p>}
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700/50">
+                    <th className="px-4 py-3 text-left">Tài sản</th>
+                    <th className="px-4 py-3 text-right">SL</th>
+                    <th className="px-4 py-3 text-right">Giá vốn</th>
+                    <th className="px-4 py-3 text-right">Giá hiện tại</th>
+                    <th className="px-4 py-3 text-right">Thị giá</th>
+                    <th className="px-4 py-3 text-right">P&L</th>
+                    <th className="px-4 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-700/30">
+                  {assets.map(a => {
+                    const cost = a.costBasis * a.units;
+                    const value = a.currentPrice * a.units;
+                    const pnl = value - cost;
+                    const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
+                    return (
+                      <tr key={a.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors group">
+                        <td className="px-4 py-3">
+                          <div>
+                            <p className="text-sm font-semibold text-slate-900 dark:text-white">{a.name}</p>
+                            {a.ticker && <p className="text-xs text-slate-500 dark:text-slate-400">{a.ticker}</p>}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-300">{a.units.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-300">{formatCurrency(a.costBasis, a.currency as Currency)}</td>
+                        <td className="px-4 py-3 text-right text-sm text-slate-900 dark:text-slate-200 font-medium">{formatCurrency(a.currentPrice, a.currency as Currency)}</td>
+                        <td className="px-4 py-3 text-right text-sm text-indigo-600 dark:text-indigo-400 font-semibold">{formatCurrency(value, a.currency as Currency, true)}</td>
+                        <td className="px-4 py-3 text-right">
+                          <div className={`flex items-center justify-end gap-1 ${pnl >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
+                            {pnl >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                            <span className="text-xs font-semibold">{pnl >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%</span>
+                          </div>
+                          <p className={`text-[10px] text-right ${pnl >= 0 ? 'text-emerald-500/70 dark:text-emerald-400/70' : 'text-rose-500/70 dark:text-rose-400/70'}`}>
+                            {pnl >= 0 ? '+' : ''}{formatCurrency(Math.abs(pnl), a.currency as Currency, true)}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all text-right justify-end">
+                            <button onClick={() => { setEditing(a); setShowModal(true); }} className="p-1 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"><Edit2 size={13} /></button>
+                            <button 
+                              onClick={() => {
+                                if (confirm('Bạn có chắc muốn xóa tài sản này?')) deleteAsset(a.id);
+                              }} 
+                              className="p-1 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"><Trash2 size={13} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card List View */}
+            <div className="md:hidden divide-y divide-slate-200 dark:divide-slate-700/30">
+              {assets.map(a => {
+                const cost = a.costBasis * a.units;
+                const value = a.currentPrice * a.units;
+                const pnl = value - cost;
+                const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
+                return (
+                  <div key={a.id} className="p-4 space-y-3 hover:bg-slate-50 dark:hover:bg-slate-700/20 active:bg-slate-100 dark:active:bg-slate-700/40 transition-colors">
+                    <div className="flex items-start justify-between">
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-slate-900 dark:text-white truncate">{a.name}</h4>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {a.ticker && <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-mono font-medium">{a.ticker}</span>}
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400">{a.units.toLocaleString()} đơn vị</span>
                         </div>
-                      </td>
-                      <td className="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-300">{a.units.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-300">{formatCurrency(a.costBasis, a.currency as Currency)}</td>
-                      <td className="px-4 py-3 text-right text-sm text-slate-900 dark:text-slate-200 font-medium">{formatCurrency(a.currentPrice, a.currency as Currency)}</td>
-                      <td className="px-4 py-3 text-right text-sm text-indigo-600 dark:text-indigo-400 font-semibold">{formatCurrency(value, a.currency as Currency, true)}</td>
-                      <td className="px-4 py-3 text-right">
-                        <div className={`flex items-center justify-end gap-1 ${pnl >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
-                          {pnl >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                          <span className="text-xs font-semibold">{pnl >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => { setEditing(a); setShowModal(true); }} className="p-2 text-slate-400 hover:text-indigo-500"><Edit2 size={16} /></button>
+                        <button 
+                          onClick={() => {
+                            if (confirm('Bạn có chắc muốn xóa tài sản này?')) deleteAsset(a.id);
+                          }} 
+                          className="p-2 text-slate-400 hover:text-rose-500"><Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-1">
+                      <div>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Thị giá</p>
+                        <p className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{formatCurrency(value, a.currency as Currency, true)}</p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Giá: {formatCurrency(a.currentPrice, a.currency as Currency)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Lãi / Lỗ</p>
+                        <div className={`flex items-center justify-end gap-1 font-bold text-sm ${pnl >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
+                          {pnl >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%
                         </div>
-                        <p className={`text-[10px] text-right ${pnl >= 0 ? 'text-emerald-500/70 dark:text-emerald-400/70' : 'text-rose-500/70 dark:text-rose-400/70'}`}>
+                        <p className={`text-[10px] font-medium mt-0.5 ${pnl >= 0 ? 'text-emerald-500/70 dark:text-emerald-400/70' : 'text-rose-500/70 dark:text-rose-400/70'}`}>
                           {pnl >= 0 ? '+' : ''}{formatCurrency(Math.abs(pnl), a.currency as Currency, true)}
                         </p>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                          <button onClick={() => { setEditing(a); setShowModal(true); }} className="p-1 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"><Edit2 size={13} /></button>
-                          <button 
-                            onClick={() => {
-                              if (confirm('Bạn có chắc muốn xóa tài sản này?')) deleteAsset(a.id);
-                            }} 
-                            className="p-1 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"><Trash2 size={13} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
       
