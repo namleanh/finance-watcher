@@ -122,7 +122,7 @@ export default function AddTransactionModal({ open, onClose }: Props) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5 overflow-y-auto max-h-[calc(100vh-64px)] sm:max-h-[85vh]">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-64px)] sm:max-h-[85vh]">
           {/* Type selector */}
           <div>
             <label className="text-[10px] sm:text-xs font-medium text-slate-400 uppercase tracking-wider mb-2.5 block">Loại giao dịch</label>
