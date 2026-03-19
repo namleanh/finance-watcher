@@ -81,6 +81,13 @@ export class TransactionsService {
           },
         }),
       ] : []),
+      // Sync with SavingsGoal if type is SAVING and subCategory matches a goal name
+      ...(dto.type === 'SAVING' && dto.subCategory ? [
+        this.prisma.savingsGoal.updateMany({
+          where: { userId, name: dto.subCategory },
+          data: { currentAmount: { increment: amount } },
+        }),
+      ] : []),
     ]);
 
     return this.serialize(t);
@@ -130,6 +137,22 @@ export class TransactionsService {
         });
       }
 
+      // 4. Update SavingsGoal progress
+      // Revert old if it was a saving goal
+      if (oldT.type === 'SAVING' && oldT.subCategory) {
+        await tx.savingsGoal.updateMany({
+          where: { userId, name: oldT.subCategory },
+          data: { currentAmount: { decrement: oldT.amount } },
+        });
+      }
+      // Apply new if it is a saving goal
+      if (newType === 'SAVING' && dto.subCategory) {
+        await tx.savingsGoal.updateMany({
+          where: { userId, name: dto.subCategory },
+          data: { currentAmount: { increment: newAmount } },
+        });
+      }
+
       return [updated];
     });
 
@@ -151,6 +174,13 @@ export class TransactionsService {
               increment: t.type === 'INCOME' || t.type === 'SAVING' || t.type === 'INVESTMENT' ? -t.amount : t.amount,
             },
           },
+        }),
+      ] : []),
+      // Revert SavingsGoal progress if type was SAVING
+      ...(t.type === 'SAVING' && t.subCategory ? [
+        this.prisma.savingsGoal.updateMany({
+          where: { userId, name: t.subCategory },
+          data: { currentAmount: { decrement: t.amount } },
         }),
       ] : []),
     ]);

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Plus, RefreshCw } from 'lucide-react';
 import { useCreateTransaction } from '@/hooks/api/useTransactions';
 import { useCreateRecurring } from '@/hooks/api/useRecurring';
+import { useGoals } from '@/hooks/api/useGoals';
 import { CATEGORIES, CURRENCIES } from '@/lib/constants';
 import { toVND } from '@/lib/exchangeRate';
 import { Currency, TransactionType, RecurringInterval } from '@/lib/types';
@@ -32,6 +33,7 @@ const RECURRING_OPTIONS: { value: RecurringInterval; label: string }[] = [
 export default function AddTransactionModal({ open, onClose }: Props) {
   const { mutateAsync: createTransaction, isPending: isTxPending } = useCreateTransaction();
   const { mutateAsync: createRecurring, isPending: isRecPending } = useCreateRecurring();
+  const { data: goals } = useGoals();
 
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
@@ -198,8 +200,11 @@ export default function AddTransactionModal({ open, onClose }: Props) {
                 disabled={!selectedCat}
                 className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-40"
               >
-                <option value="">Tất cả</option>
-                {selectedCat?.subCategories.map(s => <option key={s} value={s}>{s}</option>)}
+                <option value="">{type === 'saving' ? 'Chọn mục tiêu (Tùy chọn)' : 'Tất cả'}</option>
+                {type === 'saving' 
+                  ? goals?.map(g => <option key={g.id} value={g.name}>{g.name}</option>)
+                  : selectedCat?.subCategories.map(s => <option key={s} value={s}>{s}</option>)
+                }
               </select>
             </div>
           </div>
