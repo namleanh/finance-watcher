@@ -56,6 +56,8 @@ export const useCreateTransaction = () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       // Invalidate analytics
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
+      // Invalidate goals (since SAVING transactions update goal progress)
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
     },
   });
 };
@@ -71,6 +73,7 @@ export const useUpdateTransaction = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
     },
   });
 };
@@ -85,6 +88,7 @@ export const useDeleteTransaction = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
     },
   });
 };
