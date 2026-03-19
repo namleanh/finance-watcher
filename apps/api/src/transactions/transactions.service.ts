@@ -55,8 +55,8 @@ export class TransactionsService {
   async create(userId: string, dto: CreateTransactionDto) {
     const amount = BigInt(Math.round(dto.amount));
     
-    const [t] = await this.prisma.$transaction([
-      this.prisma.transaction.create({
+    return await this.prisma.$transaction(async (tx) => {
+      const t = await tx.transaction.create({
         data: {
           userId,
           type: dto.type,
@@ -70,27 +70,32 @@ export class TransactionsService {
           walletId: dto.walletId ?? null,
           recurringId: dto.recurringId ?? null,
         },
-      }),
-      ...(dto.walletId ? [
-        this.prisma.wallet.update({
-          where: { id: dto.walletId, userId },
-          data: {
-            balance: {
-              increment: dto.type === 'INCOME' || dto.type === 'SAVING' || dto.type === 'INVESTMENT' ? amount : -amount,
-            },
-          },
-        }),
-      ] : []),
-      // Sync with SavingsGoal if type is SAVING and subCategory matches a goal name
-      ...(dto.type?.toString().toUpperCase() === 'SAVING' && dto.subCategory ? [
-        this.prisma.savingsGoal.updateMany({
-          where: { userId, name: dto.subCategory.trim() },
-          data: { currentAmount: { increment: amount } },
-        }),
-      ] : []),
-    ]);
+      });
 
-    return this.serialize(t);
+      if (dto.walletId) {
+        const typeUpper = dto.type?.toString().toUpperCase();
+        const isIncrement = typeUpper === 'INCOME' || typeUpper === 'SAVING' || typeUpper === 'INVESTMENT';
+        await tx.wallet.update({
+          where: { id: dto.walletId, userId },
+          data: { balance: { increment: isIncrement ? amount : -amount } },
+        });
+      }
+
+      // Sync with SavingsGoal
+      if (dto.type?.toString().toUpperCase() === 'SAVING' && dto.subCategory) {
+        const goal = await tx.savingsGoal.findFirst({
+          where: { userId, name: dto.subCategory.trim() },
+        });
+        if (goal) {
+          await tx.savingsGoal.update({
+            where: { id: goal.id },
+            data: { currentAmount: { increment: amount } },
+          });
+        }
+      }
+
+      return this.serialize(t);
+    });
   }
 
   async update(id: string, userId: string, dto: UpdateTransactionDto) {
@@ -140,17 +145,27 @@ export class TransactionsService {
       // 4. Update SavingsGoal progress
       // Revert old if it was a saving goal
       if (oldT.type?.toString().toUpperCase() === 'SAVING' && oldT.subCategory) {
-        await tx.savingsGoal.updateMany({
+        const goal = await tx.savingsGoal.findFirst({
           where: { userId, name: oldT.subCategory.trim() },
-          data: { currentAmount: { decrement: oldT.amount } },
         });
+        if (goal) {
+          await tx.savingsGoal.update({
+            where: { id: goal.id },
+            data: { currentAmount: { decrement: oldT.amount } },
+          });
+        }
       }
       // Apply new if it is a saving goal
       if (newType?.toString().toUpperCase() === 'SAVING' && dto.subCategory) {
-        await tx.savingsGoal.updateMany({
+        const goal = await tx.savingsGoal.findFirst({
           where: { userId, name: dto.subCategory.trim() },
-          data: { currentAmount: { increment: newAmount } },
         });
+        if (goal) {
+          await tx.savingsGoal.update({
+            where: { id: goal.id },
+            data: { currentAmount: { increment: newAmount } },
+          });
+        }
       }
 
       return [updated];
@@ -164,28 +179,33 @@ export class TransactionsService {
     if (!t) throw new NotFoundException('Transaction not found');
     if (t.userId !== userId) throw new ForbiddenException();
 
-    await this.prisma.$transaction([
-      this.prisma.transaction.delete({ where: { id } }),
-      ...(t.walletId ? [
-        this.prisma.wallet.update({
-          where: { id: t.walletId },
-          data: {
-            balance: {
-              increment: t.type === 'INCOME' || t.type === 'SAVING' || t.type === 'INVESTMENT' ? -t.amount : t.amount,
-            },
-          },
-        }),
-      ] : []),
-      // Revert SavingsGoal progress if type was SAVING
-      ...(t.type?.toString().toUpperCase() === 'SAVING' && t.subCategory ? [
-        this.prisma.savingsGoal.updateMany({
-          where: { userId, name: t.subCategory.trim() },
-          data: { currentAmount: { decrement: t.amount } },
-        }),
-      ] : []),
-    ]);
+    return await this.prisma.$transaction(async (tx) => {
+      await tx.transaction.delete({ where: { id } });
 
-    return { message: 'Transaction deleted' };
+      if (t.walletId) {
+        const typeUpper = t.type?.toString().toUpperCase();
+        const isIncrement = typeUpper === 'INCOME' || typeUpper === 'SAVING' || typeUpper === 'INVESTMENT';
+        await tx.wallet.update({
+          where: { id: t.walletId },
+          data: { balance: { increment: isIncrement ? -t.amount : t.amount } },
+        });
+      }
+
+      // Revert SavingsGoal progress if type was SAVING
+      if (t.type?.toString().toUpperCase() === 'SAVING' && t.subCategory) {
+        const goal = await tx.savingsGoal.findFirst({
+          where: { userId, name: t.subCategory.trim() },
+        });
+        if (goal) {
+          await tx.savingsGoal.update({
+            where: { id: goal.id },
+            data: { currentAmount: { decrement: t.amount } },
+          });
+        }
+      }
+
+      return { message: 'Transaction deleted' };
+    });
   }
 
   /** Monthly summary (income / expense / saving / investment totals) */
