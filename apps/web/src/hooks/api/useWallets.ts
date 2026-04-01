@@ -7,11 +7,10 @@ export interface Wallet {
   type: 'CASH' | 'BANK' | 'CREDIT' | 'E_WALLET';
   balance: number;
   currency: string;
-  color: string;
-  icon: string;
+  color?: string;
+  icon?: string;
 }
 
-// Lấy danh sách wallets
 export const useWallets = () => {
   return useQuery({
     queryKey: ['wallets'],
@@ -22,7 +21,6 @@ export const useWallets = () => {
   });
 };
 
-// Lấy 1 wallet cụ thể
 export const useWallet = (id: string) => {
   return useQuery({
     queryKey: ['wallets', id],
@@ -34,10 +32,8 @@ export const useWallet = (id: string) => {
   });
 };
 
-// Tạo wallet mới
 export const useCreateWallet = () => {
   const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: async (newWallet: Omit<Wallet, 'id'>) => {
       const { data } = await apiClient.post('/wallets', newWallet);
@@ -45,14 +41,13 @@ export const useCreateWallet = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wallets'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },
   });
 };
 
-// Cập nhật wallet
 export const useUpdateWallet = () => {
   const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: async ({ id, ...updateData }: Partial<Wallet> & { id: string }) => {
       const { data } = await apiClient.patch(`/wallets/${id}`, updateData);
@@ -61,20 +56,20 @@ export const useUpdateWallet = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['wallets'] });
       queryClient.invalidateQueries({ queryKey: ['wallets', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },
   });
 };
 
-// Xóa wallet
 export const useDeleteWallet = () => {
   const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: async (id: string) => {
       await apiClient.delete(`/wallets/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wallets'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },
   });
 };

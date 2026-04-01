@@ -5,6 +5,7 @@ import { X, Plus, RefreshCw } from 'lucide-react';
 import { useCreateTransaction } from '@/hooks/api/useTransactions';
 import { useCreateRecurring } from '@/hooks/api/useRecurring';
 import { useGoals } from '@/hooks/api/useGoals';
+import { useWallets } from '@/hooks/api/useWallets';
 import { CATEGORIES, CURRENCIES } from '@/lib/constants';
 import { toVND } from '@/lib/exchangeRate';
 import { Currency, TransactionType, RecurringInterval } from '@/lib/types';
@@ -34,6 +35,7 @@ export default function AddTransactionModal({ open, onClose }: Props) {
   const { mutateAsync: createTransaction, isPending: isTxPending } = useCreateTransaction();
   const { mutateAsync: createRecurring, isPending: isRecPending } = useCreateRecurring();
   const { data: goals } = useGoals();
+  const { data: wallets = [] } = useWallets();
 
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
@@ -43,6 +45,7 @@ export default function AddTransactionModal({ open, onClose }: Props) {
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [notes, setNotes] = useState('');
   const [recurring, setRecurring] = useState<RecurringInterval>(null);
+  const [walletId, setWalletId] = useState<string>('');
 
   const cats = CATEGORIES.filter(c => c.type === type);
   const selectedCat = cats.find(c => c.label === category);
@@ -75,6 +78,7 @@ export default function AddTransactionModal({ open, onClose }: Props) {
         subCategory,
         date: new Date(date).toISOString(),
         notes,
+        walletId: walletId || undefined,
       });
 
       if (recurring) {
@@ -100,6 +104,7 @@ export default function AddTransactionModal({ open, onClose }: Props) {
       setAmount('');
       setNotes('');
       setRecurring(null);
+      setWalletId('');
       onClose();
     } catch (err) {
       console.error(err);
@@ -209,8 +214,30 @@ export default function AddTransactionModal({ open, onClose }: Props) {
             </div>
           </div>
 
+          {/* Wallet Selector */}
+          {wallets.length > 0 && (
+            <div>
+              <label className="text-[10px] sm:text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 block">
+                Ví thanh toán <span className="text-slate-300">(để cập nhật số dư)</span>
+              </label>
+              <select
+                value={walletId}
+                onChange={e => setWalletId(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">Không chọn ví</option>
+                {wallets.map(w => (
+                  <option key={w.id} value={w.id}>{w.name}</option>
+                ))}
+              </select>
+              {!walletId && (
+                <p className="text-[10px] text-amber-500 mt-1">⚠ Không chọn ví sẽ không cập nhật số dư</p>
+              )}
+            </div>
+          )}
+
+          {/* Date + Notes */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-3">
-            {/* Date */}
             <div>
               <label className="text-[10px] sm:text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 block">Ngày</label>
               <input
