@@ -75,10 +75,16 @@ export class TransactionsService {
       if (dto.walletId) {
         const typeUpper = dto.type?.toString().toUpperCase();
         const isIncrement = typeUpper === 'INCOME' || typeUpper === 'SAVING' || typeUpper === 'INVESTMENT';
-        await tx.wallet.update({
+        // Security: verify wallet belongs to user before updating
+        const wallet = await tx.wallet.findFirst({
           where: { id: dto.walletId, userId },
-          data: { balance: { increment: isIncrement ? amount : -amount } },
         });
+        if (wallet) {
+          await tx.wallet.update({
+            where: { id: dto.walletId },
+            data: { balance: { increment: isIncrement ? amount : -amount } },
+          });
+        }
       }
 
       // Sync with SavingsGoal
