@@ -288,18 +288,18 @@ export default function SavingsDepositsPage() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-5 py-4 text-right">
+                          <td className="px-4 py-4 text-right whitespace-nowrap">
                             <span className="text-sm font-semibold text-slate-900 dark:text-white">{formatCurrency(d.depositAmount, 'VND', true)}</span>
                           </td>
-                          <td className="px-5 py-4 text-center text-xs text-slate-600 dark:text-slate-400">
+                          <td className="px-4 py-4 text-center text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
                             {format(parseISO(d.depositDate), 'dd/MM/yyyy', { locale: vi })}
                           </td>
-                          <td className="px-5 py-4 text-center">
-                            <span className="text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2 py-1 rounded-lg">
+                          <td className="px-3 py-4 text-center">
+                            <span className="text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2 py-1 rounded-lg whitespace-nowrap">
                               {d.termMonths} tháng
                             </span>
                           </td>
-                          <td className="px-5 py-4 text-center text-xs text-slate-600 dark:text-slate-400">
+                          <td className="px-4 py-4 text-center text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
                             <span className={isMatured ? 'text-amber-500 font-medium' : ''}>
                               {format(parseISO(d.maturityDate), 'dd/MM/yyyy', { locale: vi })}
                             </span>
@@ -307,7 +307,7 @@ export default function SavingsDepositsPage() {
                           <td className="px-5 py-4 text-center">
                             <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">{d.interestRate}%</span>
                           </td>
-                          <td className="px-5 py-4 text-right">
+                          <td className="px-3 py-4 text-right whitespace-nowrap">
                             <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                               +{formatCurrency(d.interestEarned, 'VND', true)}
                             </span>
