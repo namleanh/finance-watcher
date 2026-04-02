@@ -14,7 +14,7 @@ export class AnalyticsService {
     const lastMonthStart = startOfMonth(new Date(now.getFullYear(), now.getMonth() - 1));
     const lastMonthEnd = endOfMonth(new Date(now.getFullYear(), now.getMonth() - 1));
 
-    const [thisMonthTxns, lastMonthTxns, allTxns, portfolioAssets, savingsGoals, wallets] = await Promise.all([
+    const [thisMonthTxns, lastMonthTxns, allTxns, portfolioAssets, savingsGoals, wallets, savingsDeposits] = await Promise.all([
       this.prisma.transaction.findMany({
         where: { userId, date: { gte: thisMonthStart, lte: thisMonthEnd } },
         select: { type: true, amount: true },
@@ -38,6 +38,10 @@ export class AnalyticsService {
       this.prisma.wallet.findMany({
         where: { userId },
         select: { balance: true },
+      }),
+      this.prisma.savingsDeposit.findMany({
+        where: { userId, status: 'ACTIVE' },
+        select: { depositAmount: true, interestRate: true, termMonths: true },
       }),
     ]);
 
@@ -63,8 +67,15 @@ export class AnalyticsService {
     const totalGoalCurrent = savingsGoals.reduce((s, g) => s + Number(g.currentAmount), 0);
     const totalGoalTarget = savingsGoals.reduce((s, g) => s + Number(g.targetAmount), 0);
 
-    // Công thức mới: Tổng Ví + Tổng Tài sản danh mục + (Mục tiêu tiết kiệm nếu có)
-    const totalAssets = totalWalletBalance + portfolioValue + totalGoalCurrent;
+    // Tổng tiết kiệm có kỳ hạn (gốc + lãi dự kiến)
+    const totalDeposits = savingsDeposits.reduce((s, d) => {
+      const principal = Number(d.depositAmount);
+      const interest = Math.round(principal * (Number(d.interestRate) / 100) * (d.termMonths / 12));
+      return s + principal + interest;
+    }, 0);
+
+    // Tài sản ròng = Ví + Danh mục đầu tư + Mục tiêu tiết kiệm + Tiết kiệm có kỳ hạn
+    const totalAssets = totalWalletBalance + portfolioValue + totalGoalCurrent + totalDeposits;
 
     return {
       thisMonth: {
@@ -77,6 +88,7 @@ export class AnalyticsService {
       },
       totalAssets,
       portfolioValue,
+      totalDeposits,
       savingPercent: totalGoalTarget > 0 ? (totalGoalCurrent / totalGoalTarget) * 100 : 0,
     };
   }
