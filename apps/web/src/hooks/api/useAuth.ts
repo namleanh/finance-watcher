@@ -35,6 +35,7 @@ export const useLogin = () => {
     onSuccess: (data) => {
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
+      if (data.userId) localStorage.setItem('userId', data.userId);
       // Dọn dẹp cache cũ (có thể đang lưu giá trị null) để Query thực hiện fetch mới hoàn toàn
       queryClient.removeQueries({ queryKey: ['auth', 'me'] });
     },
@@ -52,6 +53,7 @@ export const useRegister = () => {
       if (data.accessToken) {
         localStorage.setItem('accessToken', data.accessToken);
         localStorage.setItem('refreshToken', data.refreshToken);
+        if (data.userId) localStorage.setItem('userId', data.userId);
       }
     }
   });

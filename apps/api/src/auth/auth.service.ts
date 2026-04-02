@@ -95,6 +95,6 @@ export class AuthService {
       data: { refreshToken: hashedRt },
     });
 
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken, userId };
   }
 }

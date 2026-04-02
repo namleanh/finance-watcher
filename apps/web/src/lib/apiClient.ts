@@ -41,6 +41,7 @@ apiClient.interceptors.response.use(
             // Lưu lại token mới
             localStorage.setItem('accessToken', newAccessToken);
             localStorage.setItem('refreshToken', newRefreshToken);
+            if (res.data.userId) localStorage.setItem('userId', res.data.userId);
             
             // Thử lại request gốc với token mới
             originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
