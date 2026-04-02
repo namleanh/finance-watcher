@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Plus, RefreshCw } from 'lucide-react';
+import { X, Plus, RefreshCw, CreditCard, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 import { useCreateTransaction } from '@/hooks/api/useTransactions';
 import { useCreateRecurring } from '@/hooks/api/useRecurring';
-import { useGoals } from '@/hooks/api/useGoals';
 import { useWallets } from '@/hooks/api/useWallets';
 import { CATEGORIES, CURRENCIES } from '@/lib/constants';
 import { toVND } from '@/lib/exchangeRate';
@@ -19,8 +19,6 @@ interface Props {
 const TYPE_OPTIONS: { value: TransactionType; label: string; color: string }[] = [
   { value: 'income', label: '💰 Thu nhập', color: 'from-emerald-500 to-green-600' },
   { value: 'expense', label: '💸 Chi tiêu', color: 'from-rose-500 to-pink-600' },
-  { value: 'saving', label: '🐷 Tiết kiệm', color: 'from-blue-500 to-cyan-600' },
-  { value: 'investment', label: '📈 Đầu tư', color: 'from-violet-500 to-purple-600' },
 ];
 
 const RECURRING_OPTIONS: { value: RecurringInterval; label: string }[] = [
@@ -34,7 +32,6 @@ const RECURRING_OPTIONS: { value: RecurringInterval; label: string }[] = [
 export default function AddTransactionModal({ open, onClose }: Props) {
   const { mutateAsync: createTransaction, isPending: isTxPending } = useCreateTransaction();
   const { mutateAsync: createRecurring, isPending: isRecPending } = useCreateRecurring();
-  const { data: goals } = useGoals();
   const { data: wallets = [] } = useWallets();
 
   const [type, setType] = useState<TransactionType>('expense');
@@ -59,12 +56,50 @@ export default function AddTransactionModal({ open, onClose }: Props) {
     setSubCategory('');
   }, [category]);
 
+  // Auto-chọn ví đầu tiên khi danh sách load xong
+  useEffect(() => {
+    if (wallets.length > 0 && !walletId) {
+      setWalletId(wallets[0].id);
+    }
+  }, [wallets]);
+
   if (!open) return null;
+
+  // Gate: yêu cầu tạo ví trước
+  if (wallets.length === 0) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+        <div className="relative w-full sm:max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-8 flex flex-col items-center text-center gap-5 animate-in zoom-in-95 duration-200">
+          <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors">
+            <X size={20} />
+          </button>
+          <div className="w-16 h-16 rounded-2xl bg-indigo-100 dark:bg-indigo-500/10 flex items-center justify-center">
+            <CreditCard size={28} className="text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <div>
+            <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-1">Chưa có ví tiền</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+              Bạn cần tạo ít nhất một ví trước khi thêm giao dịch để theo dõi số dư chính xác.
+            </p>
+          </div>
+          <Link
+            href="/wallets"
+            onClick={onClose}
+            className="flex items-center gap-2 w-full justify-center py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-semibold text-sm hover:from-indigo-600 hover:to-violet-700 transition-all shadow-lg shadow-indigo-500/20"
+          >
+            Tạo ví tiền ngay
+            <ArrowRight size={16} />
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const num = parseFloat(amount) || 0;
-    if (!num || !category) return;
+    if (!num || !category || !walletId) return;
 
     const amtVND = toVND(num, currency);
 
@@ -205,36 +240,28 @@ export default function AddTransactionModal({ open, onClose }: Props) {
                 disabled={!selectedCat}
                 className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-40"
               >
-                <option value="">{type === 'saving' ? 'Chọn mục tiêu (Tùy chọn)' : 'Tất cả'}</option>
-                {type === 'saving' 
-                  ? goals?.map(g => <option key={g.id} value={g.name}>{g.name}</option>)
-                  : selectedCat?.subCategories.map(s => <option key={s} value={s}>{s}</option>)
-                }
+                <option value="">Tất cả</option>
+                {selectedCat?.subCategories.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
           </div>
 
           {/* Wallet Selector */}
-          {wallets.length > 0 && (
-            <div>
-              <label className="text-[10px] sm:text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 block">
-                Ví thanh toán <span className="text-slate-300">(để cập nhật số dư)</span>
-              </label>
-              <select
-                value={walletId}
-                onChange={e => setWalletId(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">Không chọn ví</option>
-                {wallets.map(w => (
-                  <option key={w.id} value={w.id}>{w.name}</option>
-                ))}
-              </select>
-              {!walletId && (
-                <p className="text-[10px] text-amber-500 mt-1">⚠ Không chọn ví sẽ không cập nhật số dư</p>
-              )}
-            </div>
-          )}
+          <div>
+            <label className="text-[10px] sm:text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 block">
+              Ví thanh toán <span className="text-rose-400">*</span>
+            </label>
+            <select
+              value={walletId}
+              onChange={e => setWalletId(e.target.value)}
+              required
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              {wallets.map(w => (
+                <option key={w.id} value={w.id}>{w.name}</option>
+              ))}
+            </select>
+          </div>
 
           {/* Date + Notes */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-3">

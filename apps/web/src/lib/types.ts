@@ -1,6 +1,6 @@
 export type Currency = 'VND' | 'USD' | 'MYR';
 
-export type TransactionType = 'income' | 'expense' | 'saving' | 'investment';
+export type TransactionType = 'income' | 'expense';
 
 export type RecurringInterval = 'daily' | 'weekly' | 'monthly' | 'yearly' | null;
 export type WalletType = 'CASH' | 'BANK' | 'E_WALLET' | 'CREDIT';

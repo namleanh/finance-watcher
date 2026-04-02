@@ -21,7 +21,7 @@ export const GOAL_COLORS = [
 ];
 
 export const CATEGORIES: {
-  type: 'income' | 'expense' | 'saving' | 'investment';
+  type: 'income' | 'expense';
   label: string;
   color: string;
   subCategories: string[];
@@ -79,27 +79,5 @@ export const CATEGORIES: {
   {
     type: 'expense', label: 'Khác', color: '#64748b',
     subCategories: ['Từ thiện', 'Quà tặng', 'Phí ngân hàng', 'Khác'],
-  },
-  // Saving
-  {
-    type: 'saving', label: 'Tiết kiệm', color: '#3b82f6',
-    subCategories: ['Tiết kiệm hàng tháng', 'Quỹ khẩn cấp', 'Mục tiêu cụ thể'],
-  },
-  // Investment
-  {
-    type: 'investment', label: 'Chứng khoán', color: '#8b5cf6',
-    subCategories: ['Cổ phiếu', 'ETF', 'Trái phiếu'],
-  },
-  {
-    type: 'investment', label: 'Tiền mã hóa', color: '#a78bfa',
-    subCategories: ['Bitcoin', 'Ethereum', 'Altcoin'],
-  },
-  {
-    type: 'investment', label: 'Bất động sản', color: '#c4b5fd',
-    subCategories: ['Đất', 'Nhà', 'Căn hộ', 'REIT'],
-  },
-  {
-    type: 'investment', label: 'Vàng', color: '#fcd34d',
-    subCategories: ['Vàng vật chất', 'Vàng tài khoản'],
   },
 ];
