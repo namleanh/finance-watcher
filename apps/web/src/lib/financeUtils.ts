@@ -36,8 +36,6 @@ export function getNetWorthHistory(
     txns.forEach(t => {
       if (t.type === 'income') runningNet += t.amount;
       if (t.type === 'expense') runningNet -= t.amount;
-      if (t.type === 'saving') runningNet += t.amount;
-      if (t.type === 'investment') runningNet += t.amount;
     });
     result.push({ month: format(new Date(year, m), 'MMM'), netWorth: runningNet });
   }
@@ -94,7 +92,6 @@ export function getDashboardSummary(state: {
 
   const income = getTotalByType(thisMonthTxns, 'income');
   const expense = getTotalByType(thisMonthTxns, 'expense');
-  const saving = getTotalByType(thisMonthTxns, 'saving');
 
   const lastIncome = getTotalByType(lastMonthTxns, 'income');
   const lastExpense = getTotalByType(lastMonthTxns, 'expense');
@@ -103,8 +100,6 @@ export function getDashboardSummary(state: {
 
   const totalIncome = getTotalByType(state.transactions, 'income');
   const totalExpense = getTotalByType(state.transactions, 'expense');
-  const totalSaving = getTotalByType(state.transactions, 'saving');
-  const totalInvestment = getTotalByType(state.transactions, 'investment');
   const totalGoalCurrent = state.savingsGoals.reduce((s, g) => s + g.currentAmount, 0);
   const totalWalletBalance = state.wallets.reduce((s, w) => s + w.balance, 0);
 
@@ -120,7 +115,6 @@ export function getDashboardSummary(state: {
   return {
     income,
     expense,
-    saving,
     totalAssets,
     portfolioValue,
     pnlPct,

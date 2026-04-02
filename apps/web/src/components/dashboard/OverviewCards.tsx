@@ -37,8 +37,8 @@ export default function OverviewCards() {
         sub={`Thu nhập: ${formatCurrency(stats.thisMonth.income, 'VND', true)}`}
       />
       <StatCard
-        title="Tiết kiệm tháng này"
-        value={formatCurrency(stats.thisMonth.saving, 'VND', true)}
+        title="Tổng tiết kiệm"
+        value={formatCurrency(stats.totalDeposits, 'VND', true)}
         icon={<PiggyBank size={20} />}
         gradient="bg-gradient-to-br from-emerald-500 to-teal-600"
         sub={`Tiến độ mục tiêu: ${stats.savingPercent.toFixed(0)}%`}
