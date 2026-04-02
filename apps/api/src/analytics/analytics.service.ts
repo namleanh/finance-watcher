@@ -41,7 +41,7 @@ export class AnalyticsService {
       }),
       this.prisma.savingsDeposit.findMany({
         where: { userId, status: 'ACTIVE' },
-        select: { depositAmount: true, interestRate: true, termMonths: true },
+        select: { depositAmount: true, interestRate: true, termMonths: true, maturityDate: true },
       }),
     ]);
 
@@ -67,10 +67,13 @@ export class AnalyticsService {
     const totalGoalCurrent = savingsGoals.reduce((s, g) => s + Number(g.currentAmount), 0);
     const totalGoalTarget = savingsGoals.reduce((s, g) => s + Number(g.targetAmount), 0);
 
-    // Tổng tiết kiệm có kỳ hạn (gốc + lãi dự kiến)
+    // Tổng tiết kiệm có kỳ hạn: gốc luôn cộng, lãi chỉ cộng khi đã đáo hạn
     const totalDeposits = savingsDeposits.reduce((s, d) => {
       const principal = Number(d.depositAmount);
-      const interest = Math.round(principal * (Number(d.interestRate) / 100) * (d.termMonths / 12));
+      const isMatured = new Date(d.maturityDate) <= now;
+      const interest = isMatured
+        ? Math.round(principal * (Number(d.interestRate) / 100) * (d.termMonths / 12))
+        : 0;
       return s + principal + interest;
     }, 0);
 
