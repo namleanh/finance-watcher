@@ -8,6 +8,7 @@ import { PortfolioModule } from './portfolio/portfolio.module';
 import { GoalsModule } from './goals/goals.module';
 import { RecurringModule } from './recurring/recurring.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { SavingsDepositsModule } from './savings-deposits/savings-deposits.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
     GoalsModule,
     RecurringModule,
     AnalyticsModule,
+    SavingsDepositsModule,
   ],
 })
 export class AppModule {}

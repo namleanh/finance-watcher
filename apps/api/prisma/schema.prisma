@@ -25,11 +25,12 @@ model User {
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   // Relations
-  wallets         Wallet[]
-  transactions    Transaction[]
-  portfolioAssets PortfolioAsset[]
-  savingsGoals    SavingsGoal[]
-  recurringItems  RecurringItem[]
+  wallets          Wallet[]
+  transactions     Transaction[]
+  portfolioAssets  PortfolioAsset[]
+  savingsGoals     SavingsGoal[]
+  recurringItems   RecurringItem[]
+  savingsDeposits  SavingsDeposit[]
 
   @@map("users")
 }
@@ -194,4 +195,26 @@ enum RecurringInterval {
   YEARLY
 
   @@map("recurring_interval")
+}
+
+// ─────────────────────────────────────────────────────────
+// SAVINGS DEPOSITS  (Tiết kiệm có kỳ hạn)
+// ─────────────────────────────────────────────────────────
+model SavingsDeposit {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  bankName       String   @map("bank_name")
+  depositAmount  BigInt   @map("deposit_amount")   // VND
+  termMonths     Int      @map("term_months")       // kỳ hạn (tháng): 1, 3, 6, 12, 18, 24
+  interestRate   Decimal  @map("interest_rate") @db.Decimal(5,2)  // % năm, ví dụ: 5.50
+  depositDate    DateTime @map("deposit_date") @db.Date
+  maturityDate   DateTime @map("maturity_date") @db.Date
+  status         String   @default("ACTIVE")        // ACTIVE | MATURED | WITHDRAWN
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("savings_deposits")
 }

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ArrowLeftRight, PieChart, Target, ChevronLeft, ChevronRight, Moon, Sun, Wallet, CreditCard, X } from 'lucide-react';
+import { LayoutDashboard, ArrowLeftRight, PieChart, Target, ChevronLeft, ChevronRight, Moon, Sun, Wallet, CreditCard, Landmark, X } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useRouter } from 'next/navigation';
 
@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/transactions', icon: ArrowLeftRight, label: 'Giao dịch' },
   { href: '/wallets', icon: CreditCard, label: 'Ví tiền' },
+  { href: '/savings', icon: Landmark, label: 'Tiết kiệm' },
   { href: '/portfolio', icon: PieChart, label: 'Đầu tư' },
   { href: '/goals', icon: Target, label: 'Mục tiêu' },
 ];
