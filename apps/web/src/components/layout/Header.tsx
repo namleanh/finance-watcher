@@ -3,9 +3,8 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Bell, LogOut, User } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
 import { useDashboardSummary } from '@/hooks/api/useAnalytics';
-import { useRecurringItems } from '@/hooks/api/useRecurring';
 import { useUser, useLogout } from '@/hooks/api/useAuth';
 import { formatCurrency } from '@/lib/exchangeRate';
 
@@ -16,14 +15,12 @@ interface HeaderProps {
 
 export default function Header({ title, subtitle }: HeaderProps) {
   const { data: stats } = useDashboardSummary();
-  const { data: recurring = [] } = useRecurringItems();
   const { data: user } = useUser();
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
   
   const [showDropdown, setShowDropdown] = useState(false);
 
   const netWorth = stats?.totalAssets || 0;
-  const activeRecurringCount = recurring.filter(r => r.active).length;
 
   const getInitials = (name?: string | null) => {
     if (!name) return 'U';
@@ -46,14 +43,6 @@ export default function Header({ title, subtitle }: HeaderProps) {
             {formatCurrency(netWorth, 'VND', true)}
           </span>
         </div>
-        <button className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-900 hover:bg-slate-200 dark:hover:text-white dark:hover:bg-slate-700 transition-all relative">
-          <Bell size={16} />
-          {activeRecurringCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-indigo-500 rounded-full text-[10px] text-white flex items-center justify-center">
-              {activeRecurringCount}
-            </span>
-          )}
-        </button>
         
         <div className="relative">
           <button 

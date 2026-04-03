@@ -3,11 +3,10 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ArrowLeftRight, PieChart, Target, ChevronLeft, ChevronRight, Moon, Sun, Wallet, CreditCard, Landmark, X, Bell, LogOut } from 'lucide-react';
+import { LayoutDashboard, ArrowLeftRight, PieChart, Target, ChevronLeft, ChevronRight, Moon, Sun, Wallet, CreditCard, Landmark, X, LogOut } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useRouter } from 'next/navigation';
 import { useUser, useLogout } from '@/hooks/api/useAuth';
-import { useRecurringItems } from '@/hooks/api/useRecurring';
 
 const NAV_ITEMS = [
   { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -30,9 +29,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const router = useRouter();
   const { data: user } = useUser();
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
-  const { data: recurring = [] } = useRecurringItems();
-
-  const activeRecurringCount = recurring.filter(r => r.active).length;
 
   const getInitials = (name?: string | null) => {
     if (!name) return 'U';
@@ -109,26 +105,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <button 
-                className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-medium relative"
-              >
-                <Bell size={14} />
-                Thông báo
-                {activeRecurringCount > 0 && (
-                  <span className="absolute top-0 right-2 w-4 h-4 bg-indigo-500 rounded-full text-[10px] text-white flex items-center justify-center -translate-y-1">
-                    {activeRecurringCount}
-                  </span>
-                )}
-              </button>
-              
+            <div className="flex flex-col gap-2">
               <button 
                 onClick={() => logout()}
                 disabled={isLoggingOut}
-                className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 text-xs font-medium"
+                className="flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 text-xs font-semibold"
               >
                 <LogOut size={14} />
-                Đăng xuất
+                Đăng xuất tài khoản
               </button>
             </div>
           </div>
