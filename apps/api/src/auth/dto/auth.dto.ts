@@ -32,3 +32,22 @@ export class RefreshTokenDto {
   @IsString()
   refreshToken: string;
 }
+
+export class ForgotPasswordDto {
+  @IsString()
+  identifier: string; // email or username
+}
+
+export class ResetPasswordDto {
+  @IsString()
+  token: string;
+
+  @IsString()
+  @MinLength(6)
+  newPassword: string;
+}
+
+export class ResendVerificationDto {
+  @IsString()
+  email: string;
+}

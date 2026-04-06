@@ -49,8 +49,8 @@ export const useRegister = () => {
       const { data } = await apiClient.post('/auth/register', userData);
       return data;
     },
-    // Đăng ký xong thì login luôn nên ta có thể lưu token tại onSuccess nếu backend trả về.
     onSuccess: (data) => {
+      // Tokens are no longer returned on register, they will be set after email is verified and user logs in.
       if (data.accessToken) {
         localStorage.setItem('accessToken', data.accessToken);
         localStorage.setItem('refreshToken', data.refreshToken);
@@ -75,6 +75,42 @@ export const useLogout = () => {
       localStorage.removeItem('userId');
       queryClient.clear(); // Xóa sạch cache data
       router.push('/login');
+    },
+  });
+};
+
+export const useVerifyEmail = () => {
+  return useMutation({
+    mutationFn: async (token: string) => {
+      const { data } = await apiClient.post('/auth/verify-email', { token });
+      return data;
+    },
+  });
+};
+
+export const useResendVerification = () => {
+  return useMutation({
+    mutationFn: async (email: string) => {
+      const { data } = await apiClient.post('/auth/resend-verification', { email });
+      return data;
+    },
+  });
+};
+
+export const useForgotPassword = () => {
+  return useMutation({
+    mutationFn: async (identifier: string) => {
+      const { data } = await apiClient.post('/auth/forgot-password', { identifier });
+      return data;
+    },
+  });
+};
+
+export const useResetPassword = () => {
+  return useMutation({
+    mutationFn: async (payload: { token: string; newPassword: string }) => {
+      const { data } = await apiClient.post('/auth/reset-password', payload);
+      return data;
     },
   });
 };

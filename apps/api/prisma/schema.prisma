@@ -22,10 +22,11 @@ model User {
   displayName   String?  @map("display_name")
   baseCurrency  String   @default("VND") @map("base_currency")
   refreshToken  String?  @map("refresh_token") // hashed
-  isEmailVerified        Boolean  @default(false) @map("is_email_verified")
-  emailVerificationToken String?  @unique @map("email_verification_token")
-  resetPasswordToken     String?  @unique @map("reset_password_token")
-  resetPasswordExpires   DateTime? @map("reset_password_expires")
+  isEmailVerified          Boolean   @default(false) @map("is_email_verified")
+  emailVerificationToken   String?   @unique @map("email_verification_token")
+  emailVerificationExpires DateTime? @map("email_verification_expires")
+  resetPasswordToken       String?   @unique @map("reset_password_token")
+  resetPasswordExpires     DateTime? @map("reset_password_expires")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 

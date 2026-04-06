@@ -10,6 +10,8 @@ import { RecurringModule } from './recurring/recurring.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { SavingsDepositsModule } from './savings-deposits/savings-deposits.module';
 
+import { MailModule } from './mail/mail.module';
+
 @Module({
   imports: [
     PrismaModule,
@@ -22,6 +24,7 @@ import { SavingsDepositsModule } from './savings-deposits/savings-deposits.modul
     RecurringModule,
     AnalyticsModule,
     SavingsDepositsModule,
+    MailModule,
   ],
 })
 export class AppModule {}

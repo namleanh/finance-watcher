@@ -1,18 +1,33 @@
 'use client';
 
-import { useState } from 'react';
-import { useLogin } from '@/hooks/api/useAuth';
+import { useState, useEffect } from 'react';
+import { useLogin, useResendVerification } from '@/hooks/api/useAuth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function LoginPage() {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [resendCountdown, setResendCountdown] = useState(0);
+  const [resendMessage, setResendMessage] = useState({ type: '', text: '' });
+  
   const { mutate: login, isPending, error } = useLogin();
+  const { mutate: resendVerification, isPending: isResending } = useResendVerification();
   const router = useRouter();
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (resendCountdown > 0) {
+      timer = setInterval(() => {
+        setResendCountdown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resendCountdown]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setResendMessage({ type: '', text: '' });
     login(
       { identifier, password },
       {
@@ -22,6 +37,25 @@ export default function LoginPage() {
       }
     );
   };
+
+  const handleResend = () => {
+    if (resendCountdown > 0) return;
+    setResendMessage({ type: '', text: '' });
+    
+    // We assume identifier is the email since it failed on this account check
+    resendVerification(identifier, {
+      onSuccess: () => {
+        setResendCountdown(60);
+        setResendMessage({ type: 'success', text: 'Email xác thực mới đã được gửi. Vui lòng kiểm tra lại hòm thư.' });
+      },
+      onError: () => {
+        setResendMessage({ type: 'error', text: 'Không thể gửi lại email vào lúc này. Vui lòng thử lại sau.' });
+      }
+    });
+  };
+
+  const errorMessage = (error as any)?.response?.data?.message;
+  const isUnverifiedError = errorMessage === 'Vui lòng xác thực email trước khi đăng nhập';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
@@ -47,7 +81,12 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Mật khẩu</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Mật khẩu</label>
+              <Link href="/forgot-password" className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
+                Quên mật khẩu?
+              </Link>
+            </div>
             <input
               type="password"
               value={password}
@@ -59,8 +98,28 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-sm text-center">
-              Sai email/username hoặc mật khẩu. Vui lòng thử lại.
+            <div className={`p-3 rounded-lg text-sm text-center ${isUnverifiedError ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' : 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400'}`}>
+              {isUnverifiedError ? 'Tài khoản chưa được xác thực. Vui lòng kiểm tra email của bạn.' : (errorMessage || 'Sai email/username hoặc mật khẩu. Vui lòng thử lại.')}
+              
+              {isUnverifiedError && (
+                <div className="mt-3 pt-3 border-t border-amber-200 dark:border-amber-800">
+                  <p className="mb-2 text-xs opacity-80">Chưa nhận được email?</p>
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={resendCountdown > 0 || isResending}
+                    className="w-full py-2 px-3 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isResending ? 'Đang gửi lại...' : resendCountdown > 0 ? `Gửi lại sau ${resendCountdown}s` : 'Gửi lại email xác thực'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {resendMessage.text && (
+            <div className={`p-3 rounded-lg text-sm text-center ${resendMessage.type === 'success' ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400'}`}>
+              {resendMessage.text}
             </div>
           )}
 
