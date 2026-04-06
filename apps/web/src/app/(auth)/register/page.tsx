@@ -7,6 +7,7 @@ import Link from 'next/link';
 
 export default function RegisterPage() {
   const [displayName, setDisplayName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { mutate: registerAccount, isPending, error } = useRegister();
@@ -15,14 +16,20 @@ export default function RegisterPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     registerAccount(
-      { email, password, displayName },
+      { email, username, password, displayName },
       {
         onSuccess: () => {
-          // hook useRegister đã được setup để lưu token nếu response có
           router.push('/');
         },
       }
     );
+  };
+
+  const getErrorMessage = (error: any) => {
+    const message = error?.response?.data?.message;
+    if (message === 'Email already in use') return 'Email này đã được sử dụng.';
+    if (message === 'Username is already taken') return 'Username này đã được sử dụng.';
+    return 'Đăng ký thất bại. Vui lòng thử lại sau.';
   };
 
   return (
@@ -37,19 +44,22 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Tên hiển thị</label>
+            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Username</label>
             <input
               type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))}
               required
+              minLength={3}
+              maxLength={20}
               className="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none"
-              placeholder="Nguyễn Văn A"
+              placeholder="username"
             />
+            <p className="text-[10px] text-slate-400 mt-1">3-20 ký tự, chỉ dùng chữ cái, số và dấu gạch dưới.</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Email</label>
+            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Email</label>
             <input
               type="email"
               value={email}
@@ -61,7 +71,18 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Mật khẩu</label>
+            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Tên hiển thị (tùy chọn)</label>
+            <input
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none"
+              placeholder="Nguyễn Văn A"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">Mật khẩu</label>
             <input
               type="password"
               value={password}
@@ -75,7 +96,7 @@ export default function RegisterPage() {
 
           {error && (
             <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-sm text-center">
-              Đăng ký thất bại. Email có thể đã được sử dụng.
+              {getErrorMessage(error)}
             </div>
           )}
 

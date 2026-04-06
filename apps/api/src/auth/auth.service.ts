@@ -17,15 +17,21 @@ export class AuthService {
 
   // ── Register ──────────────────────────────────────────────
   async register(dto: RegisterDto) {
-    const exists = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (exists) throw new ConflictException('Email already in use');
+    // Check if email exists
+    const emailExists = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    if (emailExists) throw new ConflictException('Email already in use');
+
+    // Check if username exists
+    const usernameExists = await this.prisma.user.findUnique({ where: { username: dto.username } });
+    if (usernameExists) throw new ConflictException('Username is already taken');
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
+        username: dto.username.toLowerCase(), // Ensure username is stored lowercase
         passwordHash,
-        displayName: dto.displayName,
+        displayName: dto.displayName || dto.username, // Default to username if no display name
       },
     });
 
@@ -34,10 +40,21 @@ export class AuthService {
 
   // ── Login ─────────────────────────────────────────────────
   async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const { identifier, password } = dto;
+
+    // Search by email or username
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: identifier.toLowerCase() },
+          { username: identifier.toLowerCase() },
+        ],
+      },
+    });
+
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
-    const isValid = await bcrypt.compare(dto.password, user.passwordHash);
+    const isValid = await bcrypt.compare(password, user.passwordHash);
     if (!isValid) throw new UnauthorizedException('Invalid credentials');
 
     return this.generateTokens(user.id, user.email);

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const { mutate: login, isPending, error } = useLogin();
   const router = useRouter();
@@ -14,7 +14,7 @@ export default function LoginPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     login(
-      { email, password },
+      { identifier, password },
       {
         onSuccess: () => {
           router.push('/');
@@ -35,14 +35,14 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Email</label>
+            <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">Email hoặc Username</label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               required
               className="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none"
-              placeholder="name@example.com"
+              placeholder="name@example.com hoặc username"
             />
           </div>
 
@@ -60,7 +60,7 @@ export default function LoginPage() {
 
           {error && (
             <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-sm text-center">
-              Sai email hoặc mật khẩu. Vui lòng thử lại.
+              Sai email/username hoặc mật khẩu. Vui lòng thử lại.
             </div>
           )}
 
