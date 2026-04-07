@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateWalletDto, UpdateWalletDto } from './dto/wallet.dto';
+import { encryptField, decryptField, generateBlindIndex } from '../utils/crypto.util';
 
 @Injectable()
 export class WalletsService {
@@ -11,7 +12,7 @@ export class WalletsService {
       where: { userId },
       orderBy: { createdAt: 'desc' },
     });
-    return wallets.map(this.serialize);
+    return wallets.map(w => this.serialize(w));
   }
 
   async findOne(id: string, userId: string) {
@@ -25,7 +26,8 @@ export class WalletsService {
     const wallet = await this.prisma.wallet.create({
       data: {
         userId,
-        name: dto.name,
+        name: encryptField(dto.name, userId) || dto.name,
+        nameHash: generateBlindIndex(dto.name),
         type: dto.type,
         balance: dto.balance ? BigInt(dto.balance) : BigInt(0),
         currency: dto.currency || 'VND',
@@ -41,7 +43,8 @@ export class WalletsService {
     const wallet = await this.prisma.wallet.update({
       where: { id },
       data: {
-        name: dto.name,
+        name: dto.name ? encryptField(dto.name, userId) : undefined,
+        nameHash: dto.name ? generateBlindIndex(dto.name) : undefined,
         type: dto.type,
         balance: dto.balance !== undefined ? BigInt(dto.balance) : undefined,
         currency: dto.currency,
@@ -62,6 +65,7 @@ export class WalletsService {
   private serialize(w: any) {
     return {
       ...w,
+      name: decryptField(w.name, w.userId),
       balance: Number(w.balance),
     };
   }

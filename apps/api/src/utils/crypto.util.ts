@@ -24,11 +24,26 @@ const getMasterKey = () => {
 const deriveUserKey = (userId: string): Buffer => {
   return crypto.createHash('sha256')
     .update(getMasterKey())
-    .update(userId) // Trộn ID khách để sinh khóa độc nhất
+    .update(userId) 
     .digest();
 };
 
-export const encryptNote = (text: string | null | undefined, userId: string): string | null => {
+/**
+ * Blind Index (Chỉ mục mù):
+ * Sinh ra một mã HASH (SHA256) từ nội dung gốc và Secret Key.
+ * Dùng để tìm kiếm (INDEX) trong DB mà không lộ dữ liệu thật.
+ */
+export const generateBlindIndex = (text: string | null | undefined): string | null => {
+  if (!text) return null;
+  // Chuẩn hóa chữ thường để tránh lỗi Admin vs admin
+  const normalized = text.trim().toLowerCase();
+  return crypto.createHash('sha256')
+    .update(getMasterKey())
+    .update(normalized)
+    .digest('hex');
+};
+
+export const encryptField = (text: string | null | undefined, userId: string): string | null => {
   if (!text || text.trim() === '') return text as null;
   try {
     const key = deriveUserKey(userId);
@@ -43,12 +58,11 @@ export const encryptNote = (text: string | null | undefined, userId: string): st
     return `${iv.toString('base64')}${DELIMITER}${authTag}${DELIMITER}${encrypted}`;
   } catch (error) {
     console.error(`[Security] Lỗi mã hóa dữ liệu của User: ${userId}`, error);
-    // Nếu có lỗi, thà rớt mã hóa và throw còn hơn lưu sai
     throw new Error('Lỗi mã hóa bảo mật');
   }
 };
 
-export const decryptNote = (encryptedText: string | null | undefined, userId: string): string | null => {
+export const decryptField = (encryptedText: string | null | undefined, userId: string): string | null => {
   if (!encryptedText) return encryptedText as null;
   
   // Nếu dữ liệu cũ lưu trong DB là chữ thường, nó sẽ không có cái dấu phân cách kỳ dị này, ném thẳng ra luôn
@@ -74,3 +88,9 @@ export const decryptNote = (encryptedText: string | null | undefined, userId: st
     return '🔒 Dữ liệu đã bị hỏng khóa bảo mật';
   }
 };
+
+/**
+ * Tương thích ngược: Alias cho các service đã dùng encryptNote/decryptNote
+ */
+export const encryptNote = encryptField;
+export const decryptNote = decryptField;

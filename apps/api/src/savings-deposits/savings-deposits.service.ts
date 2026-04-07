@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSavingsDepositDto, UpdateSavingsDepositDto } from './dto/savings-deposit.dto';
 import { Decimal } from '@prisma/client/runtime/library';
+import { encryptField, decryptField, generateBlindIndex } from '../utils/crypto.util';
 
 @Injectable()
 export class SavingsDepositsService {
@@ -30,7 +31,8 @@ export class SavingsDepositsService {
     const deposit = await this.prisma.savingsDeposit.create({
       data: {
         userId,
-        bankName: dto.bankName,
+        bankName: encryptField(dto.bankName, userId) || dto.bankName,
+        bankNameHash: generateBlindIndex(dto.bankName),
         depositAmount: BigInt(Math.round(dto.depositAmount)),
         termMonths: dto.termMonths,
         interestRate: dto.interestRate,
@@ -47,7 +49,8 @@ export class SavingsDepositsService {
     const deposit = await this.prisma.savingsDeposit.update({
       where: { id },
       data: {
-        bankName: dto.bankName,
+        bankName: dto.bankName ? encryptField(dto.bankName, userId) : undefined,
+        bankNameHash: dto.bankName ? generateBlindIndex(dto.bankName) : undefined,
         depositAmount: dto.depositAmount !== undefined ? BigInt(Math.round(dto.depositAmount)) : undefined,
         termMonths: dto.termMonths,
         interestRate: dto.interestRate,
@@ -74,6 +77,7 @@ export class SavingsDepositsService {
 
     return {
       ...d,
+      bankName: decryptField(d.bankName, d.userId),
       depositAmount,
       interestRate,
       interestEarned,

@@ -16,10 +16,16 @@ datasource db {
 // ─────────────────────────────────────────────────────────
 model User {
   id            String   @id @default(uuid())
-  email         String   @unique
-  username      String   @unique
+  
+  // Blind Indexes (Deterministic hashing for O(1) lookups)
+  emailHash     String?  @unique @map("email_hash")
+  usernameHash  String?  @unique @map("username_hash")
+  
+  // Encrypted Identity Fields
+  email         String   // encrypted
+  username      String   // encrypted
   passwordHash  String   @map("password_hash")
-  displayName   String?  @map("display_name")
+  displayName   String?  @map("display_name") // encrypted
   baseCurrency  String   @default("VND") @map("base_currency")
   refreshToken  String?  @map("refresh_token") // hashed
   isEmailVerified          Boolean   @default(false) @map("is_email_verified")
@@ -47,7 +53,11 @@ model User {
 model Wallet {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
-  name      String                         // "Tiền mặt", "MBBank"
+  
+  // Blind Index for O(1) lookups
+  nameHash  String?  @map("name_hash")
+
+  name      String                         // encrypted: "Tiền mặt", "MBBank"
   type      WalletType @default(CASH)
   balance   BigInt   @default(0)           // in base currency, stored as integer
   currency  String   @default("VND")
@@ -209,7 +219,11 @@ enum RecurringInterval {
 model SavingsDeposit {
   id             String   @id @default(uuid())
   userId         String   @map("user_id")
-  bankName       String   @map("bank_name")
+
+  // Blind Index for O(1) lookups
+  bankNameHash   String?  @map("bank_name_hash")
+
+  bankName       String   @map("bank_name")      // encrypted
   depositAmount  BigInt   @map("deposit_amount")   // VND
   termMonths     Int      @map("term_months")       // kỳ hạn (tháng): 1, 3, 6, 12, 18, 24
   interestRate   Decimal  @map("interest_rate") @db.Decimal(5,2)  // % năm, ví dụ: 5.50

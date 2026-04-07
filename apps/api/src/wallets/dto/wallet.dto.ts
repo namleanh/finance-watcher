@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsOptional, IsPositive, Min } from 'class-validator';
+import { IsString, IsEnum, IsOptional, Min } from 'class-validator';
 
 export enum WalletTypeEnum {
   CASH = 'CASH',
@@ -32,4 +32,28 @@ export class CreateWalletDto {
   icon?: string;
 }
 
-export class UpdateWalletDto extends CreateWalletDto {}
+export class UpdateWalletDto {
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsEnum(WalletTypeEnum)
+  @IsOptional()
+  type?: WalletTypeEnum;
+
+  @IsOptional()
+  @Min(0)
+  balance?: number;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
+
+  @IsString()
+  @IsOptional()
+  color?: string;
+
+  @IsString()
+  @IsOptional()
+  icon?: string;
+}

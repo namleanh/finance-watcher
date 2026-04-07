@@ -12,6 +12,7 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { MailService } from '../mail/mail.service';
 import { AuthConfig } from '../config/auth.config';
+import { generateBlindIndex, encryptField, decryptField } from '../utils/crypto.util';
 
 @Injectable()
 export class AuthService {
@@ -23,32 +24,44 @@ export class AuthService {
 
   // ── Register ──────────────────────────────────────────────
   async register(dto: RegisterDto) {
-    // Check if email exists
-    const emailExists = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const emailHash = generateBlindIndex(dto.email);
+    const usernameHash = generateBlindIndex(dto.username);
+
+    // Check if email exists via Hash
+    const emailExists = await this.prisma.user.findUnique({ where: { emailHash } });
     if (emailExists) throw new ConflictException('Email đã được sử dụng');
 
-    // Check if username exists
-    const usernameExists = await this.prisma.user.findUnique({ where: { username: dto.username } });
+    // Check if username exists via Hash
+    const usernameExists = await this.prisma.user.findUnique({ where: { usernameHash } });
     if (usernameExists) throw new ConflictException('Username đã được sử dụng');
 
+    const userId = crypto.randomUUID();
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationExpires = new Date();
     verificationExpires.setHours(verificationExpires.getHours() + AuthConfig.emailVerificationExpiresInHours);
 
+    // Encrypt fields using the pre-generated userId
+    const encryptedEmail = encryptField(dto.email, userId);
+    const encryptedUsername = encryptField(dto.username.toLowerCase(), userId);
+    const encryptedDisplayName = encryptField(dto.displayName || dto.username, userId);
+
     const user = await this.prisma.user.create({
       data: {
-        email: dto.email,
-        username: dto.username.toLowerCase(),
+        id: userId,
+        emailHash,
+        usernameHash,
+        email: encryptedEmail!,
+        username: encryptedUsername!,
         passwordHash,
-        displayName: dto.displayName || dto.username,
+        displayName: encryptedDisplayName,
         emailVerificationToken: verificationToken,
         emailVerificationExpires: verificationExpires,
       },
     });
 
-    // Send verification email
-    await this.mailService.sendVerificationEmail(user.email, user.displayName || user.username, verificationToken);
+    // Send verification email (using plain text for mailer)
+    await this.mailService.sendVerificationEmail(dto.email, dto.displayName || dto.username, verificationToken);
 
     return { message: 'Đăng ký thành công. Vui lòng kiểm tra email để xác thực tài khoản.' };
   }
@@ -79,12 +92,13 @@ export class AuthService {
   }
 
   // ── Resend Verification Email ─────────────────────────────
-  async resendVerification(dto: import('./dto/auth.dto').ResendVerificationDto) {
+  async resendVerification(dto: ResendVerificationDto) {
+    const identifierHash = generateBlindIndex(dto.email);
     const user = await this.prisma.user.findFirst({
       where: {
         OR: [
-          { email: dto.email.toLowerCase() },
-          { username: dto.email.toLowerCase() },
+          { emailHash: identifierHash },
+          { usernameHash: identifierHash },
         ],
       },
     });
@@ -109,7 +123,10 @@ export class AuthService {
       },
     });
 
-    await this.mailService.sendVerificationEmail(user.email, user.displayName || user.username, token);
+    const plainEmail = decryptField(user.email, user.id)!;
+    const plainName = decryptField(user.displayName, user.id) || decryptField(user.username, user.id)!;
+
+    await this.mailService.sendVerificationEmail(plainEmail, plainName, token);
 
     return { message: 'Email xác thực đã được gửi lại thành công.' };
   }
@@ -117,12 +134,13 @@ export class AuthService {
   // ── Login ─────────────────────────────────────────────────
   async login(dto: LoginDto) {
     const { identifier, password } = dto;
+    const identifierHash = generateBlindIndex(identifier);
 
     const user = await this.prisma.user.findFirst({
       where: {
         OR: [
-          { email: identifier.toLowerCase() },
-          { username: identifier.toLowerCase() },
+          { emailHash: identifierHash },
+          { usernameHash: identifierHash },
         ],
       },
     });
@@ -134,16 +152,18 @@ export class AuthService {
     const isValid = await bcrypt.compare(password, user.passwordHash);
     if (!isValid) throw new UnauthorizedException('Thông tin đăng nhập không chính xác');
 
-    return this.generateTokens(user.id, user.email);
+    const plainEmail = decryptField(user.email, user.id)!;
+    return this.generateTokens(user.id, plainEmail);
   }
 
   // ── Forgot Password ───────────────────────────────────────
   async forgotPassword(dto: ForgotPasswordDto) {
+    const identifierHash = generateBlindIndex(dto.identifier);
     const user = await this.prisma.user.findFirst({
       where: {
         OR: [
-          { email: dto.identifier.toLowerCase() },
-          { username: dto.identifier.toLowerCase() },
+          { emailHash: identifierHash },
+          { usernameHash: identifierHash },
         ],
       },
     });
@@ -165,7 +185,10 @@ export class AuthService {
       },
     });
 
-    await this.mailService.sendPasswordResetEmail(user.email, user.displayName || user.username, resetToken);
+    const plainEmail = decryptField(user.email, user.id)!;
+    const plainName = decryptField(user.displayName, user.id) || decryptField(user.username, user.id)!;
+
+    await this.mailService.sendPasswordResetEmail(plainEmail, plainName, resetToken);
 
     return { message: 'Email đặt lại mật khẩu đã được gửi.' };
   }
@@ -205,7 +228,8 @@ export class AuthService {
     const rtValid = await bcrypt.compare(refreshToken, user.refreshToken);
     if (!rtValid) throw new UnauthorizedException('Access denied');
 
-    return this.generateTokens(user.id, user.email);
+    const plainEmail = decryptField(user.email, user.id)!;
+    return this.generateTokens(user.id, plainEmail);
   }
 
   // ── Logout ────────────────────────────────────────────────
@@ -221,18 +245,18 @@ export class AuthService {
   async me(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { 
-        id: true, 
-        email: true, 
-        username: true, 
-        displayName: true, 
-        isEmailVerified: true,
-        baseCurrency: true, 
-        createdAt: true 
-      },
     });
     if (!user) throw new UnauthorizedException();
-    return user;
+    
+    return {
+      id: user.id,
+      email: decryptField(user.email, user.id),
+      username: decryptField(user.username, user.id),
+      displayName: decryptField(user.displayName, user.id),
+      isEmailVerified: user.isEmailVerified,
+      baseCurrency: user.baseCurrency,
+      createdAt: user.createdAt,
+    };
   }
 
   // ── Helper ────────────────────────────────────────────────

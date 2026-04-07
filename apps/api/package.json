@@ -12,7 +12,8 @@
     "prisma:reset": "prisma migrate reset",
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "migrate:crypto": "ts-node src/scripts/migrate-crypto.ts"
+    "migrate:crypto": "ts-node src/scripts/migrate-crypto.ts",
+    "migrate:user-crypto": "ts-node src/scripts/migrate-user-crypto.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
@@ -20,7 +21,7 @@
     "@nestjs/jwt": "^10.0.0",
     "@nestjs/passport": "^10.0.0",
     "@nestjs/platform-express": "^10.0.0",
-    "@prisma/client": "^5.0.0",
+    "@prisma/client": "^7.7.0",
     "@sendgrid/mail": "^8.1.6",
     "bcrypt": "^5.1.1",
     "class-transformer": "^0.5.1",
@@ -37,7 +38,7 @@
     "@types/express": "^4.17.21",
     "@types/node": "^20.0.0",
     "@types/passport-jwt": "^4.0.1",
-    "prisma": "^5.0.0",
+    "prisma": "^7.7.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.0.0"

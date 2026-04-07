@@ -13,6 +13,7 @@
     "prisma:reset": "npm run prisma:reset --workspace=@finance-watcher/api",
     "prisma:studio": "npm run prisma:studio --workspace=@finance-watcher/api",
     "migrate:crypto": "npm run migrate:crypto --workspace=@finance-watcher/api",
+    "migrate:user-crypto": "npm run migrate:user-crypto --workspace=@finance-watcher/api",
     "install:all": "npm install"
   },
   "workspaces": [
@@ -20,9 +21,9 @@
     "packages/*"
   ],
   "devDependencies": {
-    "prisma": "^7.5.0"
+    "prisma": "^7.7.0"
   },
   "dependencies": {
-    "@prisma/client": "^7.5.0"
+    "@prisma/client": "^7.7.0"
   }
 }
