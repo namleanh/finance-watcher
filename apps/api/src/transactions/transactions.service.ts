@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTransactionDto, UpdateTransactionDto, QueryTransactionDto } from './dto/transaction.dto';
 import { Prisma } from '@prisma/client';
+import { encryptNote, decryptNote } from '../utils/crypto.util';
 
 @Injectable()
 export class TransactionsService {
@@ -66,7 +67,7 @@ export class TransactionsService {
           category: dto.category,
           subCategory: dto.subCategory,
           date: new Date(dto.date),
-          notes: dto.notes,
+          notes: encryptNote(dto.notes, userId) || null,
           walletId: dto.walletId ?? null,
           recurringId: dto.recurringId ?? null,
         },
@@ -134,7 +135,7 @@ export class TransactionsService {
           category: dto.category,
           subCategory: dto.subCategory,
           date: dto.date ? new Date(dto.date) : undefined,
-          notes: dto.notes,
+          notes: dto.notes !== undefined ? (encryptNote(dto.notes, userId) || null) : undefined,
           walletId: dto.walletId ?? null,
         },
       });
@@ -236,6 +237,7 @@ export class TransactionsService {
   private serialize(t: any) {
     return {
       ...t,
+      notes: decryptNote(t.notes, t.userId),
       amount: Number(t.amount),
       originalAmount: Number(t.originalAmount),
     };
