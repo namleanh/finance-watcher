@@ -73,7 +73,10 @@ export default function SpendingPieChart() {
             <Tooltip
               contentStyle={{ backgroundColor: 'var(--color-bg-popover, #1e293b)', border: '1px solid var(--color-border, #334155)', borderRadius: '12px', fontSize: 12 }}
               itemStyle={{ color: 'var(--color-text, #e2e8f0)' }}
-              formatter={(value: any, name: any) => [formatCurrency(value as number, 'VND', true), name]}
+              formatter={(value: any, name: any) => {
+                const percent = total > 0 ? ((value as number) / total * 100).toFixed(1) : 0;
+                return [`${formatCurrency(value as number, 'VND', true)} (${percent}%)`, name];
+              }}
             />
             <Legend
               iconType="circle"
