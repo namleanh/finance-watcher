@@ -14,10 +14,10 @@ export class TransactionsService {
       page = 1, limit = 20, sortBy = 'date', sortOrder = 'desc',
     } = query;
 
+    // BƯỚC 1: Tìm kiếm tất cả bằng DB (Chỉ dùng các cột GIỮ NGUYÊN BẢN (Plaintext))
     const where: Prisma.TransactionWhereInput = {
       userId,
       ...(type && { type }),
-      ...(category && { category }),
       ...(walletId && { walletId }),
       ...(startDate || endDate
         ? {
@@ -29,19 +29,43 @@ export class TransactionsService {
         : {}),
     };
 
-    const [data, total] = await Promise.all([
-      this.prisma.transaction.findMany({
-        where,
-        orderBy: { [sortBy]: sortOrder },
-        skip: (page - 1) * limit,
-        take: limit,
-        include: { wallet: { select: { id: true, name: true } } },
-      }),
-      this.prisma.transaction.count({ where }),
-    ]);
+    // BƯỚC 2: Rút thẳng toàn bộ cục dữ liệu gốc từ DB lên RAM (Không cắt trang)
+    const rawData = await this.prisma.transaction.findMany({
+      where,
+      include: { wallet: { select: { id: true, name: true } } },
+    });
+
+    // BƯỚC 3: Giải mã TOÀN BỘ mảng này ngay trong lập trình (In-Memory Processing)
+    let processedData = rawData.map(t => this.serialize(t));
+
+    // BƯỚC 4: Lọc dữ liệu thủ công (Vì Category trong DB bị mã hóa thành giun dế, không thể dùng hàm WHERE)
+    if (category) {
+      processedData = processedData.filter(t => t.category === category);
+    }
+
+    // BƯỚC 5: Sắp xếp thủ công (Javascript Sorting)
+    processedData.sort((a: any, b: any) => {
+      let valA = a[sortBy];
+      let valB = b[sortBy];
+      
+      // Xử lý riêng so sánh chuỗi thời gian
+      if (sortBy === 'date') {
+        valA = new Date(a.date).getTime();
+        valB = new Date(b.date).getTime();
+      }
+      
+      if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+      if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    // BƯỚC 6: Cắt Trang thủ công (Javascript Pagination)
+    const total = processedData.length;
+    const startIndex = (page - 1) * limit;
+    const pagedData = processedData.slice(startIndex, startIndex + limit);
 
     return {
-      data: data.map(this.serialize),
+      data: pagedData,
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
@@ -64,8 +88,8 @@ export class TransactionsService {
           amount,
           originalAmount: BigInt(Math.round(dto.originalAmount)),
           originalCurrency: dto.originalCurrency,
-          category: dto.category,
-          subCategory: dto.subCategory,
+          category: encryptNote(dto.category, userId) || '',
+          subCategory: encryptNote(dto.subCategory, userId) || null,
           date: new Date(dto.date),
           notes: encryptNote(dto.notes, userId) || null,
           walletId: dto.walletId ?? null,
@@ -132,8 +156,8 @@ export class TransactionsService {
           amount: dto.amount !== undefined ? BigInt(Math.round(dto.amount)) : undefined,
           originalAmount: dto.originalAmount !== undefined ? BigInt(Math.round(dto.originalAmount)) : undefined,
           originalCurrency: dto.originalCurrency,
-          category: dto.category,
-          subCategory: dto.subCategory,
+          category: dto.category !== undefined ? (encryptNote(dto.category, userId) || '') : undefined,
+          subCategory: dto.subCategory !== undefined ? (encryptNote(dto.subCategory, userId) || null) : undefined,
           date: dto.date ? new Date(dto.date) : undefined,
           notes: dto.notes !== undefined ? (encryptNote(dto.notes, userId) || null) : undefined,
           walletId: dto.walletId ?? null,
@@ -237,6 +261,8 @@ export class TransactionsService {
   private serialize(t: any) {
     return {
       ...t,
+      category: decryptNote(t.category, t.userId),
+      subCategory: decryptNote(t.subCategory, t.userId),
       notes: decryptNote(t.notes, t.userId),
       amount: Number(t.amount),
       originalAmount: Number(t.originalAmount),
