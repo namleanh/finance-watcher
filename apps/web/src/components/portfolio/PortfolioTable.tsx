@@ -7,6 +7,7 @@ import { formatCurrency } from '@/lib/exchangeRate';
 import { Currency } from '@/lib/types';
 import { CURRENCIES } from '@/lib/constants';
 import { format, parseISO } from 'date-fns';
+import CurrencyInput from '../shared/CurrencyInput';
 
 function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () => void; editing?: PortfolioAsset }) {
   const { mutateAsync: createAsset } = useCreatePortfolioAsset();
@@ -73,7 +74,7 @@ function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Số lượng</label>
-              <input type="number" step="any" value={units} onChange={e => setUnits(e.target.value)} required placeholder="100" className="w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <CurrencyInput value={units} onChange={e => setUnits(e.target.value)} required placeholder="100" className="w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
             <div>
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Tiền tệ</label>
@@ -85,11 +86,11 @@ function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Giá vốn / cổ phiếu</label>
-              <input type="number" step="any" value={costBasis} onChange={e => setCostBasis(e.target.value)} required placeholder="50000" className="w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <CurrencyInput value={costBasis} onChange={e => setCostBasis(e.target.value)} required placeholder="50000" className="w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
             <div>
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Giá hiện tại / cổ phiếu</label>
-              <input type="number" step="any" value={currentPrice} onChange={e => setCurrentPrice(e.target.value)} required placeholder="55000" className="w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <CurrencyInput value={currentPrice} onChange={e => setCurrentPrice(e.target.value)} required placeholder="55000" className="w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
           </div>
           <div>

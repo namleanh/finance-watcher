@@ -10,6 +10,7 @@ import { CATEGORIES, CURRENCIES } from '@/lib/constants';
 import { toVND } from '@/lib/exchangeRate';
 import { Currency, TransactionType, RecurringInterval } from '@/lib/types';
 import { format } from 'date-fns';
+import CurrencyInput from './CurrencyInput';
 
 interface Props {
   open: boolean;
@@ -191,8 +192,7 @@ export default function AddTransactionModal({ open, onClose }: Props) {
             <label className="text-[10px] sm:text-xs font-medium text-slate-400 uppercase tracking-wider mb-2.5 block">Số tiền</label>
             <div className="flex gap-2">
               <div className="flex-1 relative">
-                <input
-                  type="number"
+                <CurrencyInput
                   value={amount}
                   onChange={e => setAmount(e.target.value)}
                   placeholder="0"

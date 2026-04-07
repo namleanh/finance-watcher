@@ -8,6 +8,7 @@ import { format, parseISO, isPast } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import Header from '@/components/layout/Header';
 import DeleteConfirmModal from '@/components/shared/DeleteConfirmModal';
+import CurrencyInput from '@/components/shared/CurrencyInput';
 
 const TERM_OPTIONS = [
   { value: 1, label: '1 tháng' },
@@ -100,9 +101,9 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
           {/* Amount */}
           <div>
             <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5 block">Số tiền gửi (VND)</label>
-            <input
-              type="number" value={amount} onChange={e => setAmount(e.target.value)}
-              placeholder="0" required min="0"
+            <CurrencyInput
+              value={amount} onChange={(e: any) => setAmount(e.target.value)}
+              placeholder="0" required
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>

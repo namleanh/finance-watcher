@@ -8,6 +8,7 @@ import { getGoalProgress } from '@/lib/financeUtils';
 import { SavingsGoal } from '@/lib/types';
 import { GOAL_COLORS, GOAL_ICONS } from '@/lib/constants';
 import { format, differenceInDays, parseISO } from 'date-fns';
+import CurrencyInput from '../shared/CurrencyInput';
 
 function GoalModal({ open, onClose, editing }: { open: boolean; onClose: () => void; editing?: SavingsGoal }) {
   const { mutateAsync: createGoal } = useCreateGoal();
@@ -63,12 +64,12 @@ function GoalModal({ open, onClose, editing }: { open: boolean; onClose: () => v
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-slate-400 block mb-1">Mục tiêu (₫)</label>
-              <input type="number" value={targetAmount} onChange={e => setTargetAmount(e.target.value)} required placeholder="1000000000" className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <CurrencyInput value={targetAmount} onChange={(e: any) => setTargetAmount(e.target.value)} required placeholder="1000000000" className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
             {editing && (
               <div>
                 <label className="text-xs text-slate-400 block mb-1">Đã tiết kiệm (₫)</label>
-                <input type="number" value={currentAmount} onChange={e => setCurrentAmount(e.target.value)} placeholder="0" className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <CurrencyInput value={currentAmount} onChange={(e: any) => setCurrentAmount(e.target.value)} placeholder="0" className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
             )}
           </div>

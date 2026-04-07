@@ -6,6 +6,7 @@ import { useWallets, useCreateWallet, useDeleteWallet, useUpdateWallet, Wallet a
 import { formatCurrency } from '@/lib/exchangeRate';
 import Header from '@/components/layout/Header';
 import DeleteConfirmModal from '@/components/shared/DeleteConfirmModal';
+import CurrencyInput from '@/components/shared/CurrencyInput';
 
 const WALLET_ICONS: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
   CASH: { icon: Coins, color: 'text-amber-500', bg: 'bg-amber-500/10' },
@@ -138,8 +139,7 @@ function WalletModal({ open, onClose, editWallet }: WalletModalProps) {
             <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 block">
               Số dư hiện tại (VND)
             </label>
-            <input
-              type="number"
+            <CurrencyInput
               value={balance}
               onChange={e => setBalance(e.target.value)}
               placeholder="0"
