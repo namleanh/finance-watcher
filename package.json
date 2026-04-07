@@ -10,6 +10,7 @@
     "build:api": "npm run build --workspace=@finance-watcher/api",
     "prisma:generate": "npm run prisma:generate --workspace=@finance-watcher/api",
     "prisma:migrate": "npm run prisma:migrate --workspace=@finance-watcher/api",
+    "prisma:deploy": "npm run prisma:deploy --workspace=@finance-watcher/api",
     "prisma:reset": "npm run prisma:reset --workspace=@finance-watcher/api",
     "prisma:studio": "npm run prisma:studio --workspace=@finance-watcher/api",
     "migrate:crypto": "npm run migrate:crypto --workspace=@finance-watcher/api",
