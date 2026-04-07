@@ -11,7 +11,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:reset": "prisma migrate reset",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "ts-node prisma/seed.ts"
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "migrate:crypto": "ts-node src/scripts/migrate-crypto.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
