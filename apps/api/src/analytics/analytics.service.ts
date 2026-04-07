@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { decryptNote } from '../utils/crypto.util';
 
 @Injectable()
 export class AnalyticsService {
@@ -138,10 +139,11 @@ export class AnalyticsService {
 
     const map: Record<string, number> = {};
     for (const t of txns) {
-      map[t.category] = (map[t.category] || 0) + Number(t.amount);
+      const catName = decryptNote(t.category, userId) || 'Other';
+      map[catName] = (map[catName] || 0) + Number(t.amount);
     }
 
-    const COLORS = ['#f59e0b', '#fb923c', '#ef4444', '#e11d48', '#7c3aed', '#4f46e5', '#0891b2', '#64748b'];
+    const COLORS = ['#3b82f6', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#d946ef', '#84cc16'];
     return Object.entries(map).map(([name, value], i) => ({
       name,
       value,

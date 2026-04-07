@@ -49,7 +49,7 @@ export function formatCurrency(
   const sym = symbols[currency];
 
   if (currency === 'VND') {
-    return `${sym}${Math.round(amount).toLocaleString('vi-VN')}`;
+    return `${Math.round(amount).toLocaleString('vi-VN')} ${sym}`;
   }
   return `${sym}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
