@@ -50,7 +50,8 @@ export class MailService {
   }
 
   async sendVerificationEmail(email: string, displayName: string, token: string) {
-    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${token}`;
+    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/+$/, '');
+    const verificationUrl = `${frontendUrl}/verify-email?token=${token}`;
     const subject = 'Xác thực tài khoản Finance Watcher của bạn';
     
     // Giao diện HTML của thư
@@ -75,7 +76,8 @@ export class MailService {
   }
 
   async sendPasswordResetEmail(email: string, displayName: string, token: string) {
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
+    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/+$/, '');
+    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
     const subject = 'Yêu cầu đặt lại mật khẩu - Finance Watcher';
 
     const html = `
