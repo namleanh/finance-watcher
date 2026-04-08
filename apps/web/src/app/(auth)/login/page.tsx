@@ -55,6 +55,7 @@ export default function LoginPage() {
   };
 
   const errorMessage = (error as any)?.response?.data?.message;
+  const isNetworkError = error && !(error as any).response;
   const isUnverifiedError = errorMessage === 'Vui lòng xác thực email trước khi đăng nhập';
 
   return (
@@ -98,8 +99,12 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className={`p-3 rounded-lg text-sm text-center ${isUnverifiedError ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' : 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400'}`}>
-              {isUnverifiedError ? 'Tài khoản chưa được xác thực. Vui lòng kiểm tra email của bạn.' : (errorMessage || 'Sai email/username hoặc mật khẩu. Vui lòng thử lại.')}
+            <div className={`p-3 rounded-lg text-sm text-center ${isUnverifiedError ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' : (isNetworkError ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' : 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400')}`}>
+              {isUnverifiedError 
+                ? 'Tài khoản chưa được xác thực. Vui lòng kiểm tra email của bạn.' 
+                : isNetworkError 
+                  ? 'Lỗi hệ thống hoặc kết nối server. Vui lòng thử lại sau.'
+                  : (errorMessage || 'Thông tin đăng nhập không chính xác. Vui lòng thử lại.')}
               
               {isUnverifiedError && (
                 <div className="mt-3 pt-3 border-t border-amber-200 dark:border-amber-800">
