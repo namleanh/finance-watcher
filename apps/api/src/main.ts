@@ -9,11 +9,26 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix('api/v1');
 
-  // CORS — allow all origins for now to bypass Render/Vercel network mangling
+  // CORS configuration
   app.enableCors({
-    origin: true,
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        'https://finance-watcher.namle.us',
+        'https://finance-watcher-jf23.onrender.com', // API self-reference
+        'http://localhost:3000',                     // Local Web
+        'http://localhost:3001',                     // Local API
+      ];
+      
+      // Allow requests with no origin (like mobile apps or curl) 
+      // or if the origin is in our allowed list
+      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.namle.us')) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type, Accept, Authorization',
+    allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With',
     credentials: true,
   });
 
