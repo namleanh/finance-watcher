@@ -12,7 +12,17 @@ export interface Transaction {
   date: string;
   notes?: string;
   walletId?: string;
+  walletName?: string;
+  goalId?: string;
+  goalName?: string;
+  savingsDepositId?: string;
+  depositBankName?: string;
   recurringId?: string;
+  // Investment fields
+  ticker?: string;
+  units?: number;
+  assetType?: 'STOCK' | 'CRYPTO' | 'GOLD' | 'REAL_ESTATE' | 'OTHER';
+  currentPrice?: number;
 }
 
 export const useTransactions = (params?: {

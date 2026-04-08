@@ -3,12 +3,14 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, Banknote, TrendingUp, Clock, X, Landmark } from 'lucide-react';
 import { useSavingsDeposits, useCreateSavingsDeposit, useDeleteSavingsDeposit, SavingsDeposit } from '@/hooks/api/useSavingsDeposits';
+import { useWallets } from '@/hooks/api/useWallets';
 import { formatCurrency } from '@/lib/exchangeRate';
 import { format, parseISO, isPast } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import Header from '@/components/layout/Header';
 import DeleteConfirmModal from '@/components/shared/DeleteConfirmModal';
 import CurrencyInput from '@/components/shared/CurrencyInput';
+import { Currency } from '@/lib/types';
 
 const TERM_OPTIONS = [
   { value: 1, label: '1 tháng' },
@@ -34,12 +36,14 @@ interface AddModalProps {
 
 function AddDepositModal({ open, onClose }: AddModalProps) {
   const { mutateAsync: create, isPending } = useCreateSavingsDeposit();
+  const { data: wallets = [] } = useWallets();
   const [bankName, setBankName] = useState('');
   const [amount, setAmount] = useState('');
   const [termMonths, setTermMonths] = useState(6);
   const [interestRate, setInterestRate] = useState('');
   const [depositDate, setDepositDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [notes, setNotes] = useState('');
+  const [walletId, setWalletId] = useState('');
 
   if (!open) return null;
 
@@ -63,8 +67,9 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
         interestRate: parseFloat(interestRate),
         depositDate: new Date(depositDate).toISOString(),
         notes,
+        walletId,
       });
-      setBankName(''); setAmount(''); setInterestRate(''); setNotes('');
+      setBankName(''); setAmount(''); setInterestRate(''); setNotes(''); setWalletId('');
       onClose();
     } catch (err) {
       console.error(err);
@@ -99,13 +104,31 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
           </div>
 
           {/* Amount */}
-          <div>
-            <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5 block">Số tiền gửi (VND)</label>
-            <CurrencyInput
-              value={amount} onChange={(e: any) => setAmount(e.target.value)}
-              placeholder="0" required
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5 block">Số tiền gửi (VND)</label>
+              <CurrencyInput
+                value={amount} onChange={(e: any) => setAmount(e.target.value)}
+                placeholder="0" required
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5 block">Nguồn tiền (Ví)</label>
+              <select
+                value={walletId}
+                onChange={e => setWalletId(e.target.value)}
+                required
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">-- Chọn ví --</option>
+                {wallets.map(w => (
+                  <option key={w.id} value={w.id}>
+                    {w.name} ({formatCurrency(w.balance, w.currency as Currency, true)})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Term */}

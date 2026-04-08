@@ -22,6 +22,10 @@ export class CreateSavingsDepositDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @IsString()
+  @IsOptional()
+  walletId?: string;
 }
 
 export class UpdateSavingsDepositDto {
@@ -52,4 +56,8 @@ export class UpdateSavingsDepositDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @IsString()
+  @IsOptional()
+  walletId?: string;
 }

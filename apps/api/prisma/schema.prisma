@@ -69,6 +69,10 @@ model Wallet {
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
 
+  // Integrity Links
+  savingsDeposits SavingsDeposit[]
+  portfolioAssets PortfolioAsset[]
+
   @@map("wallets")
 }
 
@@ -104,6 +108,14 @@ model Transaction {
   wallet        Wallet?        @relation(fields: [walletId], references: [id], onDelete: SetNull)
   recurringItem RecurringItem? @relation(fields: [recurringId], references: [id], onDelete: SetNull)
 
+  // Integrity Links
+  goalId           String?         @map("goal_id")
+  savingsDepositId String?         @map("savings_deposit_id")
+  
+  savingsGoal     SavingsGoal?    @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  savingsDeposit  SavingsDeposit? @relation(fields: [savingsDepositId], references: [id], onDelete: SetNull)
+  portfolioAsset  PortfolioAsset?
+
   @@index([userId, date(sort: Desc)])
   @@index([userId, type])
   @@map("transactions")
@@ -138,6 +150,13 @@ model PortfolioAsset {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Integrity Links
+  walletId      String?         @map("wallet_id")
+  transactionId String?         @unique @map("transaction_id")
+  
+  wallet        Wallet?         @relation(fields: [walletId], references: [id], onDelete: SetNull)
+  transaction   Transaction?    @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
   @@map("portfolio_assets")
 }
 
@@ -168,6 +187,9 @@ model SavingsGoal {
   updatedAt     DateTime   @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Integrity Links
+  transactions  Transaction[]
 
   @@map("savings_goals")
 }
@@ -235,6 +257,11 @@ model SavingsDeposit {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   user  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Integrity Links
+  walletId       String?         @map("wallet_id")
+  wallet         Wallet?         @relation(fields: [walletId], references: [id], onDelete: SetNull)
+  transactions   Transaction[]
 
   @@map("savings_deposits")
 }

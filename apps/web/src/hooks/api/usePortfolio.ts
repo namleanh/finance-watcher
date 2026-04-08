@@ -12,6 +12,9 @@ export interface PortfolioAsset {
   currency: string;
   purchaseDate?: string;
   notes?: string;
+  walletId?: string;
+  walletName?: string;
+  transactionId?: string;
 }
 
 export const usePortfolioAssets = () => {
@@ -44,6 +47,7 @@ export const useCreatePortfolioAsset = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['portfolio'] });
+      queryClient.invalidateQueries({ queryKey: ['wallets'] });
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },
   });
@@ -73,6 +77,7 @@ export const useDeletePortfolioAsset = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['portfolio'] });
+      queryClient.invalidateQueries({ queryKey: ['wallets'] });
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },
   });

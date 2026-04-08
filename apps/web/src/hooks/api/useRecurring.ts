@@ -1,14 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/apiClient';
+import { TransactionType, RecurringInterval } from '@/lib/types';
 
 export interface RecurringItem {
   id: string;
-  type: 'INCOME' | 'EXPENSE' | 'SAVING';
+  type: TransactionType;
   amount: number;
   originalCurrency: string;
   category: string;
   subCategory?: string;
-  interval: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+  interval: Exclude<RecurringInterval, null>;
   nextDate: string;
   notes?: string;
   active: boolean;

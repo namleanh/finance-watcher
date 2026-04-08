@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Trash2, Edit2, Plus, TrendingUp, TrendingDown } from 'lucide-react';
 import { usePortfolioAssets, usePortfolioSummary, useCreatePortfolioAsset, useUpdatePortfolioAsset, useDeletePortfolioAsset, PortfolioAsset } from '@/hooks/api/usePortfolio';
+import { useWallets } from '@/hooks/api/useWallets';
 import { formatCurrency } from '@/lib/exchangeRate';
 import { Currency } from '@/lib/types';
 import { CURRENCIES } from '@/lib/constants';
@@ -24,7 +25,11 @@ function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () 
   const [currentPrice, setCurrentPrice] = useState(editing?.currentPrice.toString() ?? '');
   const [currency, setCurrency] = useState<Currency>((editing?.currency as Currency) ?? 'VND');
   const [purchaseDate, setPurchaseDate] = useState(initDate);
+  const [assetType, setAssetType] = useState<'STOCK' | 'CRYPTO' | 'GOLD' | 'REAL_ESTATE' | 'OTHER'>(editing?.assetType ?? 'STOCK');
   const [notes, setNotes] = useState(editing?.notes ?? '');
+  const [walletId, setWalletId] = useState(editing?.walletId ?? '');
+
+  const { data: wallets = [] } = useWallets();
 
   if (!open) return null;
 
@@ -39,7 +44,8 @@ function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () 
       currency, 
       purchaseDate: new Date(purchaseDate).toISOString(), 
       notes,
-      assetType: editing?.assetType || 'STOCK', // Default to stock if not specified
+      assetType,
+      walletId,
     };
 
     try {
@@ -93,9 +99,37 @@ function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () 
               <CurrencyInput value={currentPrice} onChange={e => setCurrentPrice(e.target.value)} required placeholder="55000" className="w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
           </div>
-          <div>
-            <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Ngày mua</label>
-            <input type="date" value={purchaseDate} onChange={e => setPurchaseDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Ngày mua</label>
+              <input type="date" value={purchaseDate} onChange={e => setPurchaseDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div>
+              <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Nguồn tiền (Ví)</label>
+              <select 
+                value={walletId} 
+                onChange={e => setWalletId(e.target.value)} 
+                disabled={!!editing}
+                className="w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+              >
+                <option value="">-- Chọn ví --</option>
+                {wallets.map(w => (
+                  <option key={w.id} value={w.id}>{w.name} ({formatCurrency(w.balance, w.currency as Currency, true)})</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-3">
+            <div>
+              <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Loại tài sản</label>
+              <select value={assetType} onChange={e => setAssetType(e.target.value as any)} className="w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="STOCK">Cổ phiếu</option>
+                <option value="CRYPTO">Tiền điện tử / Crypto</option>
+                <option value="GOLD">Vàng / Kim loại quý</option>
+                <option value="REAL_ESTATE">Bất động sản</option>
+                <option value="OTHER">Khác</option>
+              </select>
+            </div>
           </div>
           <div>
             <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Ghi chú</label>

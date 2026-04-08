@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Trash2, Filter, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trash2, Filter, Search, ChevronLeft, ChevronRight, CreditCard } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useTransactions, useDeleteTransaction } from '@/hooks/api/useTransactions';
@@ -64,7 +64,10 @@ export default function TransactionTable() {
     );
   }, [transactions, search]);
 
-  const allCategories = CATEGORIES.map(c => c.label).sort();
+  const allCategories = CATEGORIES
+    .filter(c => c.type === 'INCOME' || c.type === 'EXPENSE')
+    .map(c => c.label)
+    .sort();
 
   const getCatColor = (cat: string) => {
     return CATEGORIES.find(c => c.label === cat)?.color ?? '#64748b';
@@ -172,12 +175,39 @@ export default function TransactionTable() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getCatColor(t.category) }} />
-                        <span className="text-sm text-slate-900 dark:text-slate-200">{t.category}</span>
-                        {t.subCategory && <span className="text-xs text-slate-500">/ {t.subCategory}</span>}
+                        {t.type === 'SAVING' || t.type === 'INVESTMENT' ? (
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-slate-900 dark:text-slate-200">
+                              {t.type === 'SAVING' ? (t.depositBankName || 'Tiết kiệm') : (t.category || 'Đầu tư')}
+                            </span>
+                            {t.type === 'SAVING' && t.subCategory && (
+                              <span className="text-[10px] text-slate-500">{t.subCategory}</span>
+                            )}
+                          </div>
+                        ) : (
+                          <>
+                            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getCatColor(t.category) }} />
+                            <span className="text-sm text-slate-900 dark:text-slate-200">{t.category}</span>
+                            {t.subCategory && <span className="text-xs text-slate-500">/ {t.subCategory}</span>}
+                          </>
+                        )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-400 max-w-[160px] truncate">{t.notes || '—'}</td>
+                    <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-400 max-w-[160px] truncate">
+                      {t.notes || '—'}
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {t.walletName && (
+                          <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded flex items-center gap-1">
+                            <CreditCard size={8} /> {t.walletName}
+                          </span>
+                        )}
+                        {t.goalName && (
+                          <span className="text-[9px] bg-blue-50 dark:bg-blue-900/20 text-blue-500 px-1.5 py-0.5 rounded flex items-center gap-1">
+                            🎯 {t.goalName}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
                       <span className={`text-sm font-semibold ${t.type === 'INCOME' ? 'text-emerald-500 dark:text-emerald-400' : t.type === 'EXPENSE' ? 'text-rose-500 dark:text-rose-400' : 'text-slate-900 dark:text-slate-200'}`}>
                         {t.type === 'EXPENSE' ? '-' : '+'}{formatCurrency(t.originalAmount, t.originalCurrency, false)}
@@ -211,9 +241,12 @@ export default function TransactionTable() {
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getCatColor(t.category) }} />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{t.category}</p>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                      {(t.type === 'SAVING' && t.depositBankName) ? t.depositBankName : t.category}
+                    </p>
                     <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
                       {format(parseISO(t.date), 'dd/MM/yyyy', { locale: vi })}
+                      {t.subCategory && ` • ${t.subCategory}`}
                       {t.notes && ` • ${t.notes}`}
                     </p>
                   </div>

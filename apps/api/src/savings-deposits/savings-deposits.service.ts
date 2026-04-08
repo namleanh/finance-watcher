@@ -1,7 +1,6 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSavingsDepositDto, UpdateSavingsDepositDto } from './dto/savings-deposit.dto';
-import { Decimal } from '@prisma/client/runtime/library';
 import { encryptField, decryptField, generateBlindIndex } from '../utils/crypto.util';
 
 @Injectable()
@@ -12,36 +11,94 @@ export class SavingsDepositsService {
     const deposits = await this.prisma.savingsDeposit.findMany({
       where: { userId },
       orderBy: { depositDate: 'desc' },
+      include: {
+        wallet: { select: { id: true, name: true } },
+        transactions: { select: { id: true } },
+      },
     });
     return deposits.map(d => this.serialize(d));
   }
 
   async findOne(id: string, userId: string) {
-    const d = await this.prisma.savingsDeposit.findUnique({ where: { id } });
+    const d = await this.prisma.savingsDeposit.findUnique({
+      where: { id },
+      include: {
+        wallet: { select: { id: true, name: true } },
+        transactions: { select: { id: true } },
+      },
+    });
     if (!d) throw new NotFoundException('Savings deposit not found');
     if (d.userId !== userId) throw new ForbiddenException();
     return this.serialize(d);
   }
 
   async create(userId: string, dto: CreateSavingsDepositDto) {
+    const depositAmount = BigInt(Math.round(dto.depositAmount));
     const depositDate = new Date(dto.depositDate);
     const maturityDate = new Date(depositDate);
     maturityDate.setMonth(maturityDate.getMonth() + dto.termMonths);
 
-    const deposit = await this.prisma.savingsDeposit.create({
-      data: {
-        userId,
-        bankName: encryptField(dto.bankName, userId) || dto.bankName,
-        bankNameHash: generateBlindIndex(dto.bankName),
-        depositAmount: BigInt(Math.round(dto.depositAmount)),
-        termMonths: dto.termMonths,
-        interestRate: dto.interestRate,
-        depositDate,
-        maturityDate,
-        notes: dto.notes,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Create the Savings Deposit first
+      const deposit = await tx.savingsDeposit.create({
+        data: {
+          userId,
+          bankName: encryptField(dto.bankName, userId) || dto.bankName,
+          bankNameHash: generateBlindIndex(dto.bankName),
+          depositAmount,
+          termMonths: dto.termMonths,
+          interestRate: dto.interestRate,
+          depositDate,
+          maturityDate,
+          notes: dto.notes,
+          walletId: dto.walletId,
+        },
+      });
+
+      // 2. If walletId provided, handle balance and create audit transaction
+      if (dto.walletId) {
+        const wallet = await tx.wallet.findUnique({ where: { id: dto.walletId } });
+        if (!wallet || wallet.userId !== userId) {
+          throw new ForbiddenException('Wallet not found or access denied');
+        }
+        if (wallet.balance < depositAmount) {
+          throw new BadRequestException('Số dư ví không đủ để thực hiện khoản tiết kiệm này');
+        }
+
+        // Deduct from wallet
+        await tx.wallet.update({
+          where: { id: dto.walletId },
+          data: { balance: { decrement: depositAmount } },
+        });
+
+        // Create audit transaction linked to the new deposit
+        await tx.transaction.create({
+          data: {
+            userId,
+            walletId: dto.walletId,
+            type: 'SAVING',
+            amount: depositAmount,
+            originalAmount: depositAmount,
+            originalCurrency: wallet.currency || 'VND',
+            category: encryptField('Tiết kiệm', userId) || 'Tiết kiệm',
+            date: depositDate,
+            notes: encryptField(`Gửi tiết kiệm: ${dto.bankName}`, userId) || `Gửi tiết kiệm: ${dto.bankName}`,
+            savingsDepositId: deposit.id,
+          },
+        });
+      }
+
+      // Re-fetch with relations for serialization
+      const finalDeposit = await tx.savingsDeposit.findUnique({
+        where: { id: deposit.id },
+        include: {
+          wallet: { select: { id: true, name: true } },
+          transactions: { select: { id: true } },
+        },
+      });
+
+      return this.serialize(finalDeposit);
     });
-    return this.serialize(deposit);
   }
 
   async update(id: string, userId: string, dto: UpdateSavingsDepositDto) {
@@ -63,16 +120,33 @@ export class SavingsDepositsService {
   }
 
   async remove(id: string, userId: string) {
-    await this.findOne(id, userId);
-    await this.prisma.savingsDeposit.delete({ where: { id } });
-    return { message: 'Savings deposit deleted' };
+    const deposit = await this.prisma.savingsDeposit.findUnique({ where: { id } });
+    if (!deposit) throw new NotFoundException('Savings deposit not found');
+    if (deposit.userId !== userId) throw new ForbiddenException();
+
+    return this.prisma.$transaction(async (tx) => {
+      // If linked to a wallet, refund the balance
+      if (deposit.walletId && deposit.status === 'ACTIVE') {
+        await tx.wallet.update({
+          where: { id: deposit.walletId },
+          data: { balance: { increment: deposit.depositAmount } },
+        });
+
+        // Delete all linked transactions for this deposit
+        await tx.transaction.deleteMany({
+          where: { savingsDepositId: id },
+        });
+      }
+
+      await tx.savingsDeposit.delete({ where: { id } });
+      return { message: 'Savings deposit deleted and related transactions handled' };
+    });
   }
 
   private serialize(d: any) {
     const depositAmount = Number(d.depositAmount);
     const interestRate = Number(d.interestRate);
     const termMonths = d.termMonths;
-    // Interest = principal × rate × time(years)
     const interestEarned = Math.round(depositAmount * (interestRate / 100) * (termMonths / 12));
 
     return {
@@ -81,6 +155,8 @@ export class SavingsDepositsService {
       depositAmount,
       interestRate,
       interestEarned,
+      walletName: d.wallet ? decryptField(d.wallet.name, d.userId) : null,
+      transactionIds: d.transactions ? d.transactions.map((t: any) => t.id) : [],
     };
   }
 }

@@ -34,8 +34,8 @@ export function getNetWorthHistory(
     if (year === now.getFullYear() && m > currentMonth) break;
     const txns = getMonthlyTransactions(transactions, year, m);
     txns.forEach(t => {
-      if (t.type === 'income') runningNet += t.amount;
-      if (t.type === 'expense') runningNet -= t.amount;
+      if (t.type === 'INCOME') runningNet += t.amount;
+      if (t.type === 'EXPENSE') runningNet -= t.amount;
     });
     result.push({ month: format(new Date(year, m), 'MMM'), netWorth: runningNet });
   }
@@ -48,7 +48,7 @@ export function getSpendingByCategory(
   month: number
 ): { name: string; value: number; color: string }[] {
   const monthly = getMonthlyTransactions(transactions, year, month);
-  const expenses = monthly.filter(t => t.type === 'expense');
+  const expenses = monthly.filter(t => t.type === 'EXPENSE');
 
   const map: Record<string, number> = {};
   expenses.forEach(t => {
@@ -90,16 +90,16 @@ export function getDashboardSummary(state: {
   const thisMonthTxns = getMonthlyTransactions(state.transactions, now.getFullYear(), now.getMonth());
   const lastMonthTxns = getMonthlyTransactions(state.transactions, now.getFullYear(), now.getMonth() - 1);
 
-  const income = getTotalByType(thisMonthTxns, 'income');
-  const expense = getTotalByType(thisMonthTxns, 'expense');
+  const income = getTotalByType(thisMonthTxns, 'INCOME');
+  const expense = getTotalByType(thisMonthTxns, 'EXPENSE');
 
-  const lastIncome = getTotalByType(lastMonthTxns, 'income');
-  const lastExpense = getTotalByType(lastMonthTxns, 'expense');
+  const lastIncome = getTotalByType(lastMonthTxns, 'INCOME');
+  const lastExpense = getTotalByType(lastMonthTxns, 'EXPENSE');
 
   const { totalValue: portfolioValue, pnlPct } = getPortfolioSummary(state.portfolioAssets);
 
-  const totalIncome = getTotalByType(state.transactions, 'income');
-  const totalExpense = getTotalByType(state.transactions, 'expense');
+  const totalIncome = getTotalByType(state.transactions, 'INCOME');
+  const totalExpense = getTotalByType(state.transactions, 'EXPENSE');
   const totalGoalCurrent = state.savingsGoals.reduce((s, g) => s + g.currentAmount, 0);
   const totalWalletBalance = state.wallets.reduce((s, w) => s + w.balance, 0);
 

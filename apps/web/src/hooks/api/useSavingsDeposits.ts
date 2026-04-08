@@ -12,6 +12,8 @@ export interface SavingsDeposit {
   maturityDate: string;
   status: 'ACTIVE' | 'MATURED' | 'WITHDRAWN';
   notes?: string;
+  walletId?: string;
+  walletName?: string;
   createdAt: string;
 }
 
@@ -33,6 +35,7 @@ export const useCreateSavingsDeposit = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['savings-deposits'] });
+      queryClient.invalidateQueries({ queryKey: ['wallets'] });
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },
   });
@@ -46,6 +49,7 @@ export const useDeleteSavingsDeposit = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['savings-deposits'] });
+      queryClient.invalidateQueries({ queryKey: ['wallets'] });
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },
   });

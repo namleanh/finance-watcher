@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsEnum, IsPositive, IsDateString } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsEnum, IsPositive, IsDateString, Min } from 'class-validator';
 
 export enum AssetTypeEnum {
   STOCK = 'STOCK',
@@ -21,15 +21,15 @@ export class CreatePortfolioAssetDto {
   assetType?: AssetTypeEnum;
 
   @IsNumber()
-  @IsPositive()
+  @Min(0)
   units: number;
 
   @IsNumber()
-  @IsPositive()
+  @Min(0)
   costBasis: number; // per unit, in base currency
 
   @IsNumber()
-  @IsPositive()
+  @Min(0)
   currentPrice: number; // per unit, in base currency
 
   @IsString()
@@ -43,6 +43,53 @@ export class CreatePortfolioAssetDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @IsString()
+  @IsOptional()
+  walletId?: string;
 }
 
-export class UpdatePortfolioAssetDto extends CreatePortfolioAssetDto {}
+export class UpdatePortfolioAssetDto {
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsString()
+  @IsOptional()
+  ticker?: string;
+
+  @IsEnum(AssetTypeEnum)
+  @IsOptional()
+  assetType?: AssetTypeEnum;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  units?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  costBasis?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  currentPrice?: number;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
+
+  @IsDateString()
+  @IsOptional()
+  purchaseDate?: string;
+
+  @IsString()
+  @IsOptional()
+  notes?: string;
+
+  @IsString()
+  @IsOptional()
+  walletId?: string;
+}

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTransactionDto, UpdateTransactionDto, QueryTransactionDto } from './dto/transaction.dto';
 import { Prisma } from '@prisma/client';
@@ -14,7 +14,6 @@ export class TransactionsService {
       page = 1, limit = 20, sortBy = 'date', sortOrder = 'desc',
     } = query;
 
-    // BƯỚC 1: Tìm kiếm tất cả bằng DB (Chỉ dùng các cột GIỮ NGUYÊN BẢN (Plaintext))
     const where: Prisma.TransactionWhereInput = {
       userId,
       ...(type && { type }),
@@ -29,37 +28,33 @@ export class TransactionsService {
         : {}),
     };
 
-    // BƯỚC 2: Rút thẳng toàn bộ cục dữ liệu gốc từ DB lên RAM (Không cắt trang)
     const rawData = await this.prisma.transaction.findMany({
       where,
-      include: { wallet: { select: { id: true, name: true } } },
+      include: { 
+        wallet: { select: { id: true, name: true } },
+        savingsGoal: { select: { id: true, name: true } },
+        savingsDeposit: { select: { id: true, bankName: true } },
+      },
     });
 
-    // BƯỚC 3: Giải mã TOÀN BỘ mảng này ngay trong lập trình (In-Memory Processing)
     let processedData = rawData.map(t => this.serialize(t));
 
-    // BƯỚC 4: Lọc dữ liệu thủ công (Vì Category trong DB bị mã hóa thành giun dế, không thể dùng hàm WHERE)
     if (category) {
       processedData = processedData.filter(t => t.category === category);
     }
 
-    // BƯỚC 5: Sắp xếp thủ công (Javascript Sorting)
     processedData.sort((a: any, b: any) => {
       let valA = a[sortBy];
       let valB = b[sortBy];
-      
-      // Xử lý riêng so sánh chuỗi thời gian
       if (sortBy === 'date') {
         valA = new Date(a.date).getTime();
         valB = new Date(b.date).getTime();
       }
-      
       if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
       if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
       return 0;
     });
 
-    // BƯỚC 6: Cắt Trang thủ công (Javascript Pagination)
     const total = processedData.length;
     const startIndex = (page - 1) * limit;
     const pagedData = processedData.slice(startIndex, startIndex + limit);
@@ -71,7 +66,14 @@ export class TransactionsService {
   }
 
   async findOne(id: string, userId: string) {
-    const t = await this.prisma.transaction.findUnique({ where: { id } });
+    const t = await this.prisma.transaction.findUnique({ 
+      where: { id },
+      include: {
+        wallet: { select: { id: true, name: true } },
+        savingsGoal: { select: { id: true, name: true } },
+        savingsDeposit: { select: { id: true, bankName: true } },
+      }
+    });
     if (!t) throw new NotFoundException('Transaction not found');
     if (t.userId !== userId) throw new ForbiddenException();
     return this.serialize(t);
@@ -94,16 +96,33 @@ export class TransactionsService {
           notes: encryptNote(dto.notes, userId) || null,
           walletId: dto.walletId ?? null,
           recurringId: dto.recurringId ?? null,
+          goalId: dto.goalId ?? null,
+          savingsDepositId: dto.savingsDepositId ?? null,
+        },
+        include: {
+          wallet: { select: { id: true, name: true } },
+          savingsGoal: { select: { id: true, name: true } },
+          savingsDeposit: { select: { id: true, bankName: true } },
         },
       });
 
+      // 1. Update wallet balance
       if (dto.walletId) {
         const typeUpper = dto.type?.toString().toUpperCase();
-        const isIncrement = typeUpper === 'INCOME' || typeUpper === 'SAVING' || typeUpper === 'INVESTMENT';
-        // Security: verify wallet belongs to user before updating
+        // In this system: INCOME increases balance, EXPENSE/SAVING/INVESTMENT decreases balance
+        const isIncrement = typeUpper === 'INCOME';
         const wallet = await tx.wallet.findFirst({
           where: { id: dto.walletId, userId },
         });
+        if (!wallet) {
+          throw new NotFoundException('Ví không tồn tại');
+        }
+
+        // Strict Balance Check
+        if (!isIncrement && wallet.balance < amount) {
+          throw new BadRequestException(`Số dư ví không đủ (Hiện có: ${Number(wallet.balance).toLocaleString()} VND)`);
+        }
+
         if (wallet) {
           await tx.wallet.update({
             where: { id: dto.walletId },
@@ -112,17 +131,51 @@ export class TransactionsService {
         }
       }
 
-      // Sync with SavingsGoal
-      if (dto.type?.toString().toUpperCase() === 'SAVING' && dto.subCategory) {
+      // 2. Sync with SavingsGoal
+      if (dto.type?.toString().toUpperCase() === 'SAVING' && dto.goalId) {
         const goal = await tx.savingsGoal.findFirst({
-          where: { userId, name: dto.subCategory.trim() },
+          where: { id: dto.goalId, userId },
         });
         if (goal) {
           await tx.savingsGoal.update({
-            where: { id: goal.id },
+            where: { id: dto.goalId },
             data: { currentAmount: { increment: amount } },
           });
         }
+      }
+
+      // 3. Sync with SavingsDeposit
+      if (dto.type?.toString().toUpperCase() === 'SAVING' && dto.savingsDepositId) {
+        const deposit = await tx.savingsDeposit.findFirst({
+          where: { id: dto.savingsDepositId, userId },
+        });
+        if (deposit) {
+          await tx.savingsDeposit.update({
+            where: { id: dto.savingsDepositId },
+            data: { depositAmount: { increment: amount } },
+          });
+        }
+      }
+
+      // 4. Sync with Portfolio (Investment)
+      if (dto.type?.toString().toUpperCase() === 'INVESTMENT' && dto.ticker) {
+        const units = dto.units || 1;
+        const cbPerUnit = BigInt(Math.round(Number(amount) / units));
+        
+        await tx.portfolioAsset.create({
+          data: {
+            userId,
+            name: dto.ticker, // Default to ticker as name
+            ticker: dto.ticker,
+            assetType: dto.assetType || 'STOCK',
+            units: units,
+            costBasis: cbPerUnit,
+            currentPrice: dto.currentPrice ? BigInt(Math.round(dto.currentPrice)) : cbPerUnit,
+            purchaseDate: new Date(dto.date),
+            walletId: dto.walletId,
+            transactionId: t.id,
+          }
+        });
       }
 
       return this.serialize(t);
@@ -137,18 +190,36 @@ export class TransactionsService {
     const newAmount = dto.amount !== undefined ? BigInt(Math.round(dto.amount)) : oldT.amount;
     const newType = dto.type || oldT.type;
     const newWalletId = dto.walletId !== undefined ? dto.walletId : oldT.walletId;
+    const newGoalId = dto.goalId !== undefined ? dto.goalId : oldT.goalId;
+    const newDepositId = dto.savingsDepositId !== undefined ? dto.savingsDepositId : oldT.savingsDepositId;
 
     const [t] = await this.prisma.$transaction(async (tx) => {
-      // 1. Revert old balance
+      // 1. Revert old wallet balance
       if (oldT.walletId) {
-        const revertIncrement = oldT.type === 'INCOME' || oldT.type === 'SAVING' || oldT.type === 'INVESTMENT' ? -oldT.amount : oldT.amount;
+        const oldIsIncrement = oldT.type === 'INCOME';
         await tx.wallet.update({
           where: { id: oldT.walletId },
-          data: { balance: { increment: revertIncrement } },
+          data: { balance: { increment: oldIsIncrement ? -oldT.amount : oldT.amount } },
         });
       }
 
-      // 2. Update transaction
+      // 2. Revert old SavingsGoal contribution
+      if (oldT.type === 'SAVING' && oldT.goalId) {
+        await tx.savingsGoal.update({
+          where: { id: oldT.goalId },
+          data: { currentAmount: { decrement: oldT.amount } },
+        });
+      }
+
+      // 3. Revert old SavingsDeposit contribution
+      if (oldT.type === 'SAVING' && oldT.savingsDepositId) {
+        await tx.savingsDeposit.update({
+          where: { id: oldT.savingsDepositId },
+          data: { depositAmount: { decrement: oldT.amount } },
+        });
+      }
+
+      // 3. Update transaction
       const updated = await tx.transaction.update({
         where: { id },
         data: {
@@ -160,43 +231,40 @@ export class TransactionsService {
           subCategory: dto.subCategory !== undefined ? (encryptNote(dto.subCategory, userId) || null) : undefined,
           date: dto.date ? new Date(dto.date) : undefined,
           notes: dto.notes !== undefined ? (encryptNote(dto.notes, userId) || null) : undefined,
-          walletId: dto.walletId ?? null,
+          walletId: dto.walletId !== undefined ? dto.walletId : undefined,
+          goalId: dto.goalId !== undefined ? dto.goalId : undefined,
+          savingsDepositId: dto.savingsDepositId !== undefined ? dto.savingsDepositId : undefined,
+        },
+        include: {
+          wallet: { select: { id: true, name: true } },
+          savingsGoal: { select: { id: true, name: true } },
+          savingsDeposit: { select: { id: true, bankName: true } },
         },
       });
 
-      // 3. Apply new balance
+      // 4. Apply new wallet balance
       if (newWalletId) {
-        const applyIncrement = newType === 'INCOME' || newType === 'SAVING' || newType === 'INVESTMENT' ? newAmount : -newAmount;
+        const newIsIncrement = newType === 'INCOME';
         await tx.wallet.update({
           where: { id: newWalletId },
-          data: { balance: { increment: applyIncrement } },
+          data: { balance: { increment: newIsIncrement ? newAmount : -newAmount } },
         });
       }
 
-      // 4. Update SavingsGoal progress
-      // Revert old if it was a saving goal
-      if (oldT.type?.toString().toUpperCase() === 'SAVING' && oldT.subCategory) {
-        const goal = await tx.savingsGoal.findFirst({
-          where: { userId, name: oldT.subCategory.trim() },
+      // 5. Apply new SavingsGoal contribution
+      if (newType === 'SAVING' && newGoalId) {
+        await tx.savingsGoal.update({
+          where: { id: newGoalId },
+          data: { currentAmount: { increment: newAmount } },
         });
-        if (goal) {
-          await tx.savingsGoal.update({
-            where: { id: goal.id },
-            data: { currentAmount: { decrement: oldT.amount } },
-          });
-        }
       }
-      // Apply new if it is a saving goal
-      if (newType?.toString().toUpperCase() === 'SAVING' && dto.subCategory) {
-        const goal = await tx.savingsGoal.findFirst({
-          where: { userId, name: dto.subCategory.trim() },
+
+      // 6. Apply new SavingsDeposit contribution
+      if (newType === 'SAVING' && newDepositId) {
+        await tx.savingsDeposit.update({
+          where: { id: newDepositId },
+          data: { depositAmount: { increment: newAmount } },
         });
-        if (goal) {
-          await tx.savingsGoal.update({
-            where: { id: goal.id },
-            data: { currentAmount: { increment: newAmount } },
-          });
-        }
       }
 
       return [updated];
@@ -211,35 +279,43 @@ export class TransactionsService {
     if (t.userId !== userId) throw new ForbiddenException();
 
     return await this.prisma.$transaction(async (tx) => {
-      await tx.transaction.delete({ where: { id } });
-
+      // 1. Revert wallet balance
       if (t.walletId) {
-        const typeUpper = t.type?.toString().toUpperCase();
-        const isIncrement = typeUpper === 'INCOME' || typeUpper === 'SAVING' || typeUpper === 'INVESTMENT';
+        const isIncrement = t.type === 'INCOME';
         await tx.wallet.update({
           where: { id: t.walletId },
           data: { balance: { increment: isIncrement ? -t.amount : t.amount } },
         });
       }
 
-      // Revert SavingsGoal progress if type was SAVING
-      if (t.type?.toString().toUpperCase() === 'SAVING' && t.subCategory) {
-        const goal = await tx.savingsGoal.findFirst({
-          where: { userId, name: t.subCategory.trim() },
+      // 2. Revert SavingsGoal contribution
+      if (t.type === 'SAVING' && t.goalId) {
+        await tx.savingsGoal.update({
+          where: { id: t.goalId },
+          data: { currentAmount: { decrement: t.amount } },
         });
-        if (goal) {
-          await tx.savingsGoal.update({
-            where: { id: goal.id },
-            data: { currentAmount: { decrement: t.amount } },
-          });
-        }
       }
 
+      // 3. Revert SavingsDeposit contribution
+      if (t.type === 'SAVING' && t.savingsDepositId) {
+        await tx.savingsDeposit.update({
+          where: { id: t.savingsDepositId },
+          data: { depositAmount: { decrement: t.amount } },
+        });
+      }
+
+      // 4. Revert PortfolioAsset (Investment)
+      if (t.type === 'INVESTMENT') {
+        await tx.portfolioAsset.deleteMany({
+          where: { transactionId: t.id },
+        });
+      }
+
+      await tx.transaction.delete({ where: { id } });
       return { message: 'Transaction deleted' };
     });
   }
 
-  /** Monthly summary (income / expense / saving / investment totals) */
   async getSummary(userId: string, year: number, month: number) {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
@@ -252,12 +328,13 @@ export class TransactionsService {
     const summary = { income: 0, expense: 0, saving: 0, investment: 0 };
     for (const t of transactions) {
       const key = t.type.toLowerCase() as keyof typeof summary;
-      summary[key] += Number(t.amount);
+      if (summary.hasOwnProperty(key)) {
+        summary[key] += Number(t.amount);
+      }
     }
-    return { year, month, ...summary, net: summary.income - summary.expense };
+    return { year, month, ...summary, net: summary.income - summary.expense - summary.saving - summary.investment };
   }
 
-  /** BigInt → number for JSON serialization */
   private serialize(t: any) {
     return {
       ...t,
@@ -266,6 +343,9 @@ export class TransactionsService {
       notes: decryptNote(t.notes, t.userId),
       amount: Number(t.amount),
       originalAmount: Number(t.originalAmount),
+      walletName: t.wallet ? decryptNote(t.wallet.name, t.userId) : null,
+      goalName: t.savingsGoal ? t.savingsGoal.name : null,
+      depositBankName: t.savingsDeposit ? decryptNote(t.savingsDeposit.bankName, t.userId) : null,
     };
   }
 }

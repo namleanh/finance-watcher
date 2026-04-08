@@ -1,8 +1,9 @@
 export type Currency = 'VND' | 'USD' | 'MYR';
 
-export type TransactionType = 'income' | 'expense';
+export type TransactionType = 'INCOME' | 'EXPENSE' | 'SAVING' | 'INVESTMENT';
 
-export type RecurringInterval = 'daily' | 'weekly' | 'monthly' | 'yearly' | null;
+export type RecurringInterval = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY' | null;
+
 export type WalletType = 'CASH' | 'BANK' | 'E_WALLET' | 'CREDIT';
 
 export interface Wallet {
@@ -25,20 +26,36 @@ export interface Transaction {
   subCategory: string;    // e.g. "Cafe"
   date: string;           // ISO date string
   notes: string;
-  recurring: RecurringInterval;
+  walletId?: string;
+  walletName?: string;
+  goalId?: string;
+  goalName?: string;
+  savingsDepositId?: string;
+  depositBankName?: string;
+  recurringId?: string;
   createdAt: string;
+
+  // Investment Linkage
+  ticker?: string;
+  units?: number;
+  assetType?: PortfolioAsset['assetType'];
+  currentPrice?: number;
 }
 
 export interface PortfolioAsset {
   id: string;
   name: string;
   ticker: string;
+  assetType: 'STOCK' | 'CRYPTO' | 'GOLD' | 'REAL_ESTATE' | 'OTHER';
   units: number;
   costBasis: number;       // per unit, in VND
   currentPrice: number;    // per unit, in VND
   currency: Currency;
   purchaseDate: string;
   notes: string;
+  walletId?: string;
+  walletName?: string;
+  transactionId?: string;
 }
 
 export interface SavingsGoal {
@@ -58,7 +75,7 @@ export interface RecurringItem {
   originalCurrency: Currency;
   category: string;
   subCategory: string;
-  interval: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  interval: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
   nextDate: string;
   notes: string;
   active: boolean;
