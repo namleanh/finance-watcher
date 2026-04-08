@@ -15,30 +15,30 @@ export class AnalyticsService {
     const lastMonthStart = startOfMonth(new Date(now.getFullYear(), now.getMonth() - 1));
     const lastMonthEnd = endOfMonth(new Date(now.getFullYear(), now.getMonth() - 1));
 
-    const [thisMonthTxns, lastMonthTxns, allTxns, portfolioAssets, savingsGoals, wallets, savingsDeposits] = await Promise.all([
+    // 1. Get transactions from the start of last month to now for monthly stats
+    // 2. Aggregate lifetime totals efficiently
+    // 3. Aggregate wallet/goal totals efficiently
+    const [periodTxns, lifetimeTxns, portfolioAssets, goalsAgg, walletsAgg, savingsDeposits] = await Promise.all([
       this.prisma.transaction.findMany({
-        where: { userId, date: { gte: thisMonthStart, lte: thisMonthEnd } },
-        select: { type: true, amount: true },
+        where: { userId, date: { gte: lastMonthStart } },
+        select: { type: true, amount: true, date: true },
       }),
-      this.prisma.transaction.findMany({
-        where: { userId, date: { gte: lastMonthStart, lte: lastMonthEnd } },
-        select: { type: true, amount: true },
-      }),
-      this.prisma.transaction.findMany({
+      this.prisma.transaction.groupBy({
+        by: ['type'],
         where: { userId },
-        select: { type: true, amount: true },
+        _sum: { amount: true },
       }),
       this.prisma.portfolioAsset.findMany({
         where: { userId },
         select: { units: true, currentPrice: true },
       }),
-      this.prisma.savingsGoal.findMany({
+      this.prisma.savingsGoal.aggregate({
         where: { userId },
-        select: { currentAmount: true, targetAmount: true },
+        _sum: { currentAmount: true, targetAmount: true },
       }),
-      this.prisma.wallet.findMany({
+      this.prisma.wallet.aggregate({
         where: { userId },
-        select: { balance: true },
+        _sum: { balance: true },
       }),
       this.prisma.savingsDeposit.findMany({
         where: { userId, status: 'ACTIVE' },
@@ -46,27 +46,33 @@ export class AnalyticsService {
       }),
     ]);
 
-    const sumByType = (txns: any[], type: string) =>
-      txns.filter(t => t.type === type).reduce((s, t) => s + Number(t.amount), 0);
+    const sumByType = (txns: any[], type: string, start?: Date, end?: Date) =>
+      txns
+        .filter(t => t.type === type && (!start || new Date(t.date) >= start) && (!end || new Date(t.date) <= end))
+        .reduce((s, t) => s + Number(t.amount), 0);
 
-    const income = sumByType(thisMonthTxns, 'INCOME');
-    const expense = sumByType(thisMonthTxns, 'EXPENSE');
-    const saving = sumByType(thisMonthTxns, 'SAVING');
+    const income = sumByType(periodTxns, 'INCOME', thisMonthStart, thisMonthEnd);
+    const expense = sumByType(periodTxns, 'EXPENSE', thisMonthStart, thisMonthEnd);
+    const saving = sumByType(periodTxns, 'SAVING', thisMonthStart, thisMonthEnd);
 
-    const lastIncome = sumByType(lastMonthTxns, 'INCOME');
-    const lastExpense = sumByType(lastMonthTxns, 'EXPENSE');
+    const lastIncome = sumByType(periodTxns, 'INCOME', lastMonthStart, lastMonthEnd);
+    const lastExpense = sumByType(periodTxns, 'EXPENSE', lastMonthStart, lastMonthEnd);
 
-    const totalIncome = sumByType(allTxns, 'INCOME');
-    const totalExpense = sumByType(allTxns, 'EXPENSE');
-    const totalSaving = sumByType(allTxns, 'SAVING');
-    const totalInvestment = sumByType(allTxns, 'INVESTMENT');
+    // Lifetime totals from grouped aggregation
+    const getLifetimeSum = (type: string) => 
+      Number(lifetimeTxns.find(t => t.type === type)?._sum?.amount || 0);
+
+    const totalIncome = getLifetimeSum('INCOME');
+    const totalExpense = getLifetimeSum('EXPENSE');
+    const totalSaving = getLifetimeSum('SAVING');
+    const totalInvestment = getLifetimeSum('INVESTMENT');
 
     const portfolioValue = portfolioAssets.reduce(
       (s, a) => s + Number(a.currentPrice) * Number(a.units), 0);
 
-    const totalWalletBalance = wallets.reduce((s, w) => s + Number(w.balance), 0);
-    const totalGoalCurrent = savingsGoals.reduce((s, g) => s + Number(g.currentAmount), 0);
-    const totalGoalTarget = savingsGoals.reduce((s, g) => s + Number(g.targetAmount), 0);
+    const totalWalletBalance = Number(walletsAgg._sum?.balance || 0);
+    const totalGoalCurrent = Number(goalsAgg._sum?.currentAmount || 0);
+    const totalGoalTarget = Number(goalsAgg._sum?.targetAmount || 0);
 
     // Tổng tiết kiệm có kỳ hạn: gốc luôn cộng, lãi chỉ cộng khi đã đáo hạn
     const totalDeposits = savingsDeposits.reduce((s, d) => {
