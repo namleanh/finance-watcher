@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateTransactionDto, UpdateTransactionDto, QueryTransactionDto } from './dto/transaction.dto';
 import { Prisma } from '@prisma/client';
 import { encryptNote, decryptNote } from '../utils/crypto.util';
+import { convertCurrency } from '../utils/exchange.util';
 
 @Injectable()
 export class TransactionsService {
@@ -109,26 +110,37 @@ export class TransactionsService {
       // 1. Update wallet balance
       if (dto.walletId) {
         const typeUpper = dto.type?.toString().toUpperCase();
-        // In this system: INCOME increases balance, EXPENSE/SAVING/INVESTMENT decreases balance
         const isIncrement = typeUpper === 'INCOME';
         const wallet = await tx.wallet.findFirst({
           where: { id: dto.walletId, userId },
         });
+        
         if (!wallet) {
           throw new NotFoundException('Ví không tồn tại');
         }
 
-        // Strict Balance Check
-        if (!isIncrement && wallet.balance < amount) {
-          throw new BadRequestException(`Số dư ví không đủ (Hiện có: ${Number(wallet.balance).toLocaleString()} VND)`);
+        // Use originalAmount if currencies match, otherwise convert
+        let balanceChange: bigint;
+        if (wallet.currency === dto.originalCurrency) {
+          balanceChange = BigInt(Math.round(dto.originalAmount));
+        } else if (wallet.currency === 'VND') {
+          balanceChange = amount; // which is BigInt(Math.round(dto.amount))
+        } else {
+          // Cross-currency conversion
+          const converted = convertCurrency(dto.originalAmount, dto.originalCurrency, wallet.currency);
+          balanceChange = BigInt(Math.round(converted));
         }
 
-        if (wallet) {
-          await tx.wallet.update({
-            where: { id: dto.walletId },
-            data: { balance: { increment: isIncrement ? amount : -amount } },
-          });
+        // Strict Balance Check
+        if (!isIncrement && wallet.balance < balanceChange) {
+          const balanceStr = `${Number(wallet.balance).toLocaleString('en-US')} ${wallet.currency}`;
+          throw new BadRequestException(`Số dư ví không đủ (Hiện có: ${balanceStr})`);
         }
+
+        await tx.wallet.update({
+          where: { id: dto.walletId },
+          data: { balance: { increment: isIncrement ? balanceChange : -balanceChange } },
+        });
       }
 
       // 2. Sync with SavingsGoal
@@ -196,11 +208,24 @@ export class TransactionsService {
     const [t] = await this.prisma.$transaction(async (tx) => {
       // 1. Revert old wallet balance
       if (oldT.walletId) {
-        const oldIsIncrement = oldT.type === 'INCOME';
-        await tx.wallet.update({
-          where: { id: oldT.walletId },
-          data: { balance: { increment: oldIsIncrement ? -oldT.amount : oldT.amount } },
-        });
+        const wallet = await tx.wallet.findUnique({ where: { id: oldT.walletId } });
+        if (wallet) {
+          const oldIsIncrement = oldT.type === 'INCOME';
+          let oldBalanceChange: bigint;
+          if (wallet.currency === oldT.originalCurrency) {
+            oldBalanceChange = oldT.originalAmount;
+          } else if (wallet.currency === 'VND') {
+            oldBalanceChange = oldT.amount;
+          } else {
+            const converted = convertCurrency(Number(oldT.originalAmount), oldT.originalCurrency, wallet.currency);
+            oldBalanceChange = BigInt(Math.round(converted));
+          }
+
+          await tx.wallet.update({
+            where: { id: oldT.walletId },
+            data: { balance: { increment: oldIsIncrement ? -oldBalanceChange : oldBalanceChange } },
+          });
+        }
       }
 
       // 2. Revert old SavingsGoal contribution
@@ -244,11 +269,28 @@ export class TransactionsService {
 
       // 4. Apply new wallet balance
       if (newWalletId) {
-        const newIsIncrement = newType === 'INCOME';
-        await tx.wallet.update({
-          where: { id: newWalletId },
-          data: { balance: { increment: newIsIncrement ? newAmount : -newAmount } },
-        });
+        const wallet = await tx.wallet.findUnique({ where: { id: newWalletId } });
+        if (wallet) {
+          const newIsIncrement = newType === 'INCOME';
+          let newBalanceChange: bigint;
+          if (wallet.currency === (dto.originalCurrency || oldT.originalCurrency)) {
+            newBalanceChange = newAmount === oldT.amount ? oldT.originalAmount : BigInt(Math.round(dto.originalAmount || Number(oldT.originalAmount)));
+          } else if (wallet.currency === 'VND') {
+            newBalanceChange = newAmount;
+          } else {
+            const converted = convertCurrency(
+              Number(dto.originalAmount || Number(oldT.originalAmount)),
+              dto.originalCurrency || oldT.originalCurrency,
+              wallet.currency
+            );
+            newBalanceChange = BigInt(Math.round(converted));
+          }
+
+          await tx.wallet.update({
+            where: { id: newWalletId },
+            data: { balance: { increment: newIsIncrement ? newBalanceChange : -newBalanceChange } },
+          });
+        }
       }
 
       // 5. Apply new SavingsGoal contribution
@@ -281,11 +323,24 @@ export class TransactionsService {
     return await this.prisma.$transaction(async (tx) => {
       // 1. Revert wallet balance
       if (t.walletId) {
-        const isIncrement = t.type === 'INCOME';
-        await tx.wallet.update({
-          where: { id: t.walletId },
-          data: { balance: { increment: isIncrement ? -t.amount : t.amount } },
-        });
+        const wallet = await tx.wallet.findUnique({ where: { id: t.walletId } });
+        if (wallet) {
+          const isIncrement = t.type === 'INCOME';
+          let balanceChange: bigint;
+          if (wallet.currency === t.originalCurrency) {
+            balanceChange = t.originalAmount;
+          } else if (wallet.currency === 'VND') {
+            balanceChange = t.amount;
+          } else {
+            const converted = convertCurrency(Number(t.originalAmount), t.originalCurrency, wallet.currency);
+            balanceChange = BigInt(Math.round(converted));
+          }
+
+          await tx.wallet.update({
+            where: { id: t.walletId },
+            data: { balance: { increment: isIncrement ? -balanceChange : balanceChange } },
+          });
+        }
       }
 
       // 2. Revert SavingsGoal contribution
