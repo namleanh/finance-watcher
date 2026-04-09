@@ -303,9 +303,13 @@ export default function WalletsPage() {
 
                   <div className="mt-4">
                     <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                      {formatCurrency(wallet.balance, 'VND', true)}
+                      {formatCurrency(wallet.balance, wallet.currency as Currency, true)}
                     </p>
-                    <p className="text-xs text-slate-400 mt-0.5">{wallet.currency}</p>
+                    {wallet.currency !== 'VND' && (
+                      <p className="text-[11px] font-medium text-indigo-500 mt-0.5">
+                        ≈ {toVND(wallet.balance, wallet.currency as Currency).toLocaleString('vi-VN')} VND
+                      </p>
+                    )}
                   </div>
                 </div>
               );
