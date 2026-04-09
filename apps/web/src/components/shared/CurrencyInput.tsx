@@ -31,8 +31,36 @@ export default function CurrencyInput({ value, onChange, className, ...props }: 
   }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Replace anything that is not a digit or a dot
-    let rawStr = e.target.value.replace(/[^0-9.]/g, '');
+    let val = e.target.value;
+
+    // Detect if user typed a comma as a decimal separator
+    // Since we format with en-US (comma as thousands), this is tricky.
+    // If the last character is a comma, we definitely treat it as a decimal point.
+    const isTrailingComma = val.endsWith(',');
+    const isTrailingDot = val.endsWith('.');
+
+    // Normalize: replace comma with dot if it's clearly intended as a decimal
+    // or if we want to support the user's request "allow comma for decimal".
+    // Strategy: Remove all commas that were likely thousands separators from displayValue,
+    // then if a comma remains or was just added, it's a decimal.
+    
+    // Simpler: If there's a comma and no dot, OR if the comma is the last char, treat it as dot.
+    let rawStr = val;
+    if (isTrailingComma) {
+      rawStr = val.slice(0, -1) + '.';
+    } else {
+      // If user pasted or typed 1,55
+      // If there's only one comma and no dot, it's a decimal.
+      const commaCount = (val.match(/,/g) || []).length;
+      const dotCount = (val.match(/\./g) || []).length;
+      
+      if (commaCount === 1 && dotCount === 0) {
+        rawStr = val.replace(',', '.');
+      }
+    }
+
+    // Now strip everything except digits and dot
+    rawStr = rawStr.replace(/[^0-9.]/g, '');
     
     // Ensure only one dot exists
     const parts = rawStr.split('.');
@@ -40,7 +68,8 @@ export default function CurrencyInput({ value, onChange, className, ...props }: 
       rawStr = parts[0] + '.' + parts.slice(1).join('');
     }
 
-    let intPart = parts[0] || '';
+    const finalParts = rawStr.split('.');
+    let intPart = finalParts[0] || '';
     if (intPart) {
       intPart = Number(intPart).toLocaleString('en-US');
     }
@@ -48,7 +77,7 @@ export default function CurrencyInput({ value, onChange, className, ...props }: 
     if (rawStr.endsWith('.')) {
       setDisplayValue(intPart + '.');
     } else {
-      const decPart = parts.length > 1 ? '.' + parts[1] : '';
+      const decPart = finalParts.length > 1 ? '.' + finalParts[1] : '';
       setDisplayValue(intPart ? intPart + decPart : '');
     }
 

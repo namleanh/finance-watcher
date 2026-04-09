@@ -262,11 +262,15 @@ export default function AddTransactionModal({ open, onClose }: Props) {
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-violet-500 uppercase mb-1.5 block">Số lượng (Units)</label>
-                  <input
-                    type="number" step="any" value={units} onChange={e => setUnits(e.target.value)}
-                    placeholder="10.5" required
-                    className="w-full bg-white dark:bg-slate-900 border-none rounded-xl px-4 py-2 text-sm dark:text-white focus:ring-2 focus:ring-violet-500"
-                  />
+                    <input
+                      type="text" inputMode="decimal"
+                      value={units} onChange={e => {
+                        const val = e.target.value.replace(',', '.');
+                        if (/^[0-9.]*$/.test(val)) setUnits(val);
+                      }}
+                      placeholder="10.5" required
+                      className="w-full bg-white dark:bg-slate-900 border-none rounded-xl px-4 py-2 text-sm dark:text-white focus:ring-2 focus:ring-violet-500"
+                    />
                 </div>
               </div>
               <div>

@@ -156,8 +156,12 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
             <div>
               <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5 block">Lãi suất (%/năm)</label>
               <input
-                type="number" value={interestRate} onChange={e => setInterestRate(e.target.value)}
-                placeholder="5.5" step="0.1" min="0" max="100" required
+                type="text" inputMode="decimal"
+                value={interestRate} onChange={e => {
+                  const val = e.target.value.replace(',', '.');
+                  if (/^[0-9.]*$/.test(val)) setInterestRate(val);
+                }}
+                placeholder="5.5" required
                 className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
