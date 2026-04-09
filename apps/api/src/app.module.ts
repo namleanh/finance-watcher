@@ -11,6 +11,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { SavingsDepositsModule } from './savings-deposits/savings-deposits.module';
 
 import { MailModule } from './mail/mail.module';
+import { MarketDataModule } from './market-data/market-data.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { MailModule } from './mail/mail.module';
     RecurringModule,
     AnalyticsModule,
     SavingsDepositsModule,
+    MarketDataModule,
     MailModule,
   ],
 })

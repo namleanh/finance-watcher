@@ -43,6 +43,7 @@ model User {
   savingsGoals     SavingsGoal[]
   recurringItems   RecurringItem[]
   savingsDeposits  SavingsDeposit[]
+  marketPreferences UserMarketPreference[]
 
   @@map("users")
 }
@@ -264,4 +265,40 @@ model SavingsDeposit {
   transactions   Transaction[]
 
   @@map("savings_deposits")
+}
+// ─────────────────────────────────────────────────────────
+// MARKET DATA  (Dữ liệu thị trường)
+// ─────────────────────────────────────────────────────────
+model MarketData {
+  id        String         @id @default(uuid())
+  type      MarketDataType
+  symbol    String         // e.g., 'USD/VND', 'SJC', 'STK:VNM'
+  label     String         // Friendly name: 'Đô la Mỹ', 'Vàng SJC'
+  price     Decimal        @db.Decimal(18, 4)
+  change    Decimal?       @db.Decimal(5, 2) // Percentage change
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
+  @@unique([type, symbol])
+  @@map("market_data")
+}
+
+enum MarketDataType {
+  CURRENCY
+  GOLD
+  STOCK
+
+  @@map("market_data_type")
+}
+
+model UserMarketPreference {
+  id        String         @id @default(uuid())
+  userId    String         @map("user_id")
+  symbol    String
+  type      MarketDataType
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, symbol, type])
+  @@map("user_market_preferences")
 }

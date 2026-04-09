@@ -142,9 +142,12 @@ export default function TransactionTable() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-slate-500">
-          <div className="text-5xl mb-3">📋</div>
-          <p className="font-medium text-slate-400">Không tìm thấy giao dịch nào</p>
+        <div className="flex flex-col items-center justify-center py-20 transition-all duration-300">
+          <div className="w-16 h-16 rounded-full bg-slate-50 dark:bg-slate-800/50 border-2 border-dashed border-slate-200 dark:border-slate-700 flex items-center justify-center mb-4">
+            <CreditCard size={28} className="text-slate-300 dark:text-slate-600" />
+          </div>
+          <p className="font-bold text-slate-900 dark:text-slate-100 italic">Không tìm thấy giao dịch nào</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Vui lòng thử điều chỉnh bộ lọc của bạn</p>
         </div>
       ) : (
         <>

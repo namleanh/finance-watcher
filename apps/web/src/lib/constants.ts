@@ -5,12 +5,24 @@ export const EXCHANGE_RATES: Record<Currency, number> = {
   USD: 1,
   VND: 25400,
   MYR: 4.7,
+  EUR: 0.92,
+  JPY: 152,
+  GBP: 0.79,
+  AUD: 1.53,
+  SGD: 1.35,
+  KRW: 1360,
 };
 
 export const CURRENCIES: { code: Currency; label: string; symbol: string }[] = [
   { code: 'VND', label: 'Vietnamese Dong', symbol: '₫' },
   { code: 'USD', label: 'US Dollar', symbol: '$' },
   { code: 'MYR', label: 'Malaysian Ringgit', symbol: 'RM' },
+  { code: 'EUR', label: 'Euro', symbol: '€' },
+  { code: 'JPY', label: 'Japanese Yen', symbol: '¥' },
+  { code: 'GBP', label: 'British Pound', symbol: '£' },
+  { code: 'AUD', label: 'Australian Dollar', symbol: 'A$' },
+  { code: 'SGD', label: 'Singapore Dollar', symbol: 'S$' },
+  { code: 'KRW', label: 'South Korean Won', symbol: '₩' },
 ];
 
 export const GOAL_ICONS = ['🏠', '🚗', '✈️', '💍', '🎓', '💰', '📱', '⛵'];

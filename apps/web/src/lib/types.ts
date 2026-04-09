@@ -1,4 +1,4 @@
-export type Currency = 'VND' | 'USD' | 'MYR';
+export type Currency = 'VND' | 'USD' | 'MYR' | 'EUR' | 'JPY' | 'GBP' | 'AUD' | 'SGD' | 'KRW';
 
 export type TransactionType = 'INCOME' | 'EXPENSE' | 'SAVING' | 'INVESTMENT';
 

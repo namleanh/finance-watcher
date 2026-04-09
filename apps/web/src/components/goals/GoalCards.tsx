@@ -53,23 +53,23 @@ function GoalModal({ open, onClose, editing }: { open: boolean; onClose: () => v
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-6">
-        <h2 className="font-semibold text-white mb-4">{editing ? 'Cập nhật mục tiêu' : 'Thêm mục tiêu tiết kiệm'}</h2>
+      <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-6">
+        <h2 className="font-semibold text-slate-900 dark:text-white mb-4">{editing ? 'Cập nhật mục tiêu' : 'Thêm mục tiêu tiết kiệm'}</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="text-xs text-slate-400 block mb-1">Tên mục tiêu</label>
-            <input value={name} onChange={e => setName(e.target.value)} required placeholder="VD: Mua nhà 2027" className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Tên mục tiêu</label>
+            <input value={name} onChange={e => setName(e.target.value)} required placeholder="VD: Mua nhà 2027" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-slate-400 block mb-1">Mục tiêu (₫)</label>
-              <CurrencyInput value={targetAmount} onChange={(e: any) => setTargetAmount(e.target.value)} required placeholder="1000000000" className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Mục tiêu (₫)</label>
+              <CurrencyInput value={targetAmount} onChange={(e: any) => setTargetAmount(e.target.value)} required placeholder="1000000000" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
             </div>
             {editing && (
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Đã tiết kiệm (₫)</label>
-                <CurrencyInput value={currentAmount} onChange={(e: any) => setCurrentAmount(e.target.value)} placeholder="0" className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Đã tiết kiệm (₫)</label>
+                <CurrencyInput value={currentAmount} onChange={(e: any) => setCurrentAmount(e.target.value)} placeholder="0" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
               </div>
             )}
           </div>
@@ -99,8 +99,8 @@ function GoalModal({ open, onClose, editing }: { open: boolean; onClose: () => v
             </div>
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 text-sm font-medium hover:bg-slate-700 transition-all">Hủy</button>
-            <button type="submit" className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-sm font-semibold shadow-lg hover:from-indigo-600 hover:to-violet-700 transition-all">Lưu</button>
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">Hủy</button>
+            <button type="submit" className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-sm font-semibold shadow-lg hover:from-indigo-600 hover:to-violet-700 transition-all active:scale-95">Lưu</button>
           </div>
         </form>
       </div>
@@ -127,8 +127,8 @@ export default function GoalCards() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-semibold text-white">Mục tiêu tiết kiệm</h2>
-          <p className="text-xs text-slate-400">{goals.length} mục tiêu đang theo dõi</p>
+          <h2 className="font-semibold text-slate-900 dark:text-white">Mục tiêu tiết kiệm</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{goals.length} mục tiêu đang theo dõi</p>
         </div>
         <button
           onClick={() => { setEditing(undefined); setShowModal(true); }}
@@ -139,10 +139,18 @@ export default function GoalCards() {
       </div>
 
       {goals.length === 0 ? (
-        <div className="rounded-2xl bg-slate-800/60 border border-slate-700/50 flex flex-col items-center justify-center py-20 text-slate-500">
-          <Target size={48} className="mb-4 opacity-30" />
-          <p className="font-medium text-slate-400">Chưa có mục tiêu nào</p>
-          <p className="text-sm mt-1">Thiết lập mục tiêu để theo dõi tiến độ tiết kiệm</p>
+        <div className="rounded-[2.5rem] bg-slate-50/50 dark:bg-slate-900/40 border-2 border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center py-16 transition-all duration-300">
+          <div className="w-20 h-20 rounded-full bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center mb-6">
+            <Target size={36} className="text-slate-300 dark:text-slate-600" />
+          </div>
+          <p className="font-bold text-slate-900 dark:text-slate-100 text-lg">Chưa có mục tiêu nào</p>
+          <p className="text-sm text-slate-500 dark:text-slate-500 mt-1 max-w-[200px] text-center">Thiết lập mục tiêu để theo dõi tiến độ tiết kiệm</p>
+          <button
+            onClick={() => { setEditing(undefined); setShowModal(true); }}
+            className="mt-6 flex items-center gap-2 px-5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-bold shadow-sm hover:border-indigo-500 dark:hover:border-indigo-500 transition-all active:scale-95"
+          >
+            <Plus size={14} className="text-indigo-500" /> Tạo mục tiêu mới
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

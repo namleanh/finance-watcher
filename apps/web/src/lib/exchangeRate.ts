@@ -45,11 +45,13 @@ export function formatCurrency(
   }
   */
 
-  const symbols: Record<Currency, string> = { VND: '₫', USD: '$', MYR: 'RM' };
+  const symbols: Record<Currency, string> = { 
+    VND: '₫', USD: '$', MYR: 'RM', EUR: '€', JPY: '¥', GBP: '£', AUD: 'A$', SGD: 'S$', KRW: '₩' 
+  };
   const sym = symbols[currency];
 
   if (currency === 'VND') {
-    return `${Math.round(amount).toLocaleString('vi-VN')} ${sym}`;
+    return `${Math.round(amount).toLocaleString('vi-VN')}\u00A0${sym}`;
   }
   return `${sym}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -66,6 +68,12 @@ export async function fetchLiveRates(apiKey: string): Promise<Record<Currency, n
       USD: 1,
       VND: data.conversion_rates.VND ?? EXCHANGE_RATES.VND,
       MYR: data.conversion_rates.MYR ?? EXCHANGE_RATES.MYR,
+      EUR: data.conversion_rates.EUR ?? EXCHANGE_RATES.EUR,
+      JPY: data.conversion_rates.JPY ?? EXCHANGE_RATES.JPY,
+      GBP: data.conversion_rates.GBP ?? EXCHANGE_RATES.GBP,
+      AUD: data.conversion_rates.AUD ?? EXCHANGE_RATES.AUD,
+      SGD: data.conversion_rates.SGD ?? EXCHANGE_RATES.SGD,
+      KRW: data.conversion_rates.KRW ?? EXCHANGE_RATES.KRW,
     };
   } catch {
     return EXCHANGE_RATES;

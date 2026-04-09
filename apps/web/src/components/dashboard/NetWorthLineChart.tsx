@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { TrendingUp } from 'lucide-react';
 import { useNetWorthHistory } from '@/hooks/api/useAnalytics';
 import { formatCurrency } from '@/lib/exchangeRate';
 
@@ -46,9 +47,12 @@ export default function NetWorthLineChart() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
         </div>
       ) : data.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-48 text-slate-500">
-          <div className="text-4xl mb-2">📈</div>
-          <p className="text-sm">Chưa có dữ liệu giao dịch</p>
+        <div className="flex flex-col items-center justify-center h-48 transition-all duration-300">
+          <div className="w-14 h-14 rounded-full bg-slate-50 dark:bg-slate-800/50 border-2 border-dashed border-slate-200 dark:border-slate-700 flex items-center justify-center mb-4">
+            <TrendingUp size={24} className="text-slate-300 dark:text-slate-600" />
+          </div>
+          <p className="font-bold text-slate-900 dark:text-slate-100 italic text-sm">Chưa có dữ liệu giao dịch</p>
+          <p className="text-[10px] text-slate-500 dark:text-slate-500 mt-1">Cập nhật tài sản để xem biến động</p>
         </div>
       ) : (
         <ResponsiveContainer width="100%" height={220}>

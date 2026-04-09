@@ -64,3 +64,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .animate-in {
   animation: fade-in 0.2s ease-out;
 }
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
