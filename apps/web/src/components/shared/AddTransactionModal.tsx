@@ -12,6 +12,7 @@ import { Currency, TransactionType, RecurringInterval } from '@/lib/types';
 import { format } from 'date-fns';
 import CurrencyInput from './CurrencyInput';
 import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 interface Props {
   open: boolean;
@@ -39,6 +40,7 @@ export default function AddTransactionModal({ open, onClose }: Props) {
   const { data: goals = [] } = useGoals();
   const { data: deposits = [] } = useSavingsDeposits();
   const { toVND, getRate } = useCurrencyConverter();
+  useBodyScrollLock(open);
 
   const [type, setType] = useState<TransactionType>('EXPENSE');
   const [amount, setAmount] = useState('');

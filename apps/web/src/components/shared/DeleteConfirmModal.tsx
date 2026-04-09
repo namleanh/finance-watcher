@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { AlertTriangle, X } from 'lucide-react';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 interface DeleteConfirmModalProps {
   open: boolean;
@@ -20,6 +21,7 @@ export default function DeleteConfirmModal({
   message = 'Bạn có chắc chắn muốn xóa giao dịch này? Hành động này không thể hoàn tác.',
   isLoading = false,
 }: DeleteConfirmModalProps) {
+  useBodyScrollLock(open);
   if (!open) return null;
 
   return (

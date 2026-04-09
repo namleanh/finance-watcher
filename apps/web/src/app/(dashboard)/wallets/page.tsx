@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Plus, Trash2, Wallet, Building2, Smartphone, CreditCard, Coins, Edit2 } from 'lucide-react';
 import { useWallets, useCreateWallet, useDeleteWallet, useUpdateWallet, Wallet as WalletType } from '@/hooks/api/useWallets';
 import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { formatCurrency } from '@/lib/exchangeRate';
 import { Currency } from '@/lib/types';
 import { CURRENCIES } from '@/lib/constants';
@@ -37,6 +38,7 @@ function WalletModal({ open, onClose, editWallet }: WalletModalProps) {
   const { mutateAsync: create, isPending: isCreating } = useCreateWallet();
   const { mutateAsync: update, isPending: isUpdating } = useUpdateWallet();
   const { getRate } = useCurrencyConverter();
+  useBodyScrollLock(open);
 
   const [name, setName] = useState(editWallet?.name || '');
   const [type, setType] = useState<string>(editWallet?.type || 'CASH');
@@ -89,8 +91,8 @@ function WalletModal({ open, onClose, editWallet }: WalletModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
           <div className="flex items-center gap-2">
             <Wallet size={18} className="text-indigo-500" />
             <h2 className="font-semibold text-slate-900 dark:text-white">
@@ -100,7 +102,7 @@ function WalletModal({ open, onClose, editWallet }: WalletModalProps) {
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-lg transition-colors">✕</button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto">
           {/* Name & Currency */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>

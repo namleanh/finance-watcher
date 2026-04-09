@@ -11,6 +11,7 @@ import Header from '@/components/layout/Header';
 import DeleteConfirmModal from '@/components/shared/DeleteConfirmModal';
 import CurrencyInput from '@/components/shared/CurrencyInput';
 import { Currency } from '@/lib/types';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 const TERM_OPTIONS = [
   { value: 1, label: '1 tháng' },
@@ -37,6 +38,7 @@ interface AddModalProps {
 function AddDepositModal({ open, onClose }: AddModalProps) {
   const { mutateAsync: create, isPending } = useCreateSavingsDeposit();
   const { data: wallets = [] } = useWallets();
+  useBodyScrollLock(open);
   const [bankName, setBankName] = useState('');
   const [amount, setAmount] = useState('');
   const [termMonths, setTermMonths] = useState(6);

@@ -10,11 +10,13 @@ import { CURRENCIES } from '@/lib/constants';
 import { format, parseISO } from 'date-fns';
 import CurrencyInput from '../shared/CurrencyInput';
 import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () => void; editing?: PortfolioAsset }) {
   const { mutateAsync: createAsset } = useCreatePortfolioAsset();
   const { mutateAsync: updateAsset } = useUpdatePortfolioAsset();
   const { toVND } = useCurrencyConverter();
+  useBodyScrollLock(open);
 
   const initDate = editing?.purchaseDate 
     ? format(parseISO(editing.purchaseDate), 'yyyy-MM-dd') 
@@ -66,9 +68,9 @@ function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-6 animate-in fade-in zoom-in-95 duration-200">
-        <h2 className="font-semibold text-slate-900 dark:text-white mb-4">{editing ? 'Cập nhật tài sản' : 'Thêm tài sản đầu tư'}</h2>
-        <form onSubmit={handleSubmit} className="space-y-3">
+      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-6 animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+        <h2 className="font-semibold text-slate-900 dark:text-white mb-4 shrink-0">{editing ? 'Cập nhật tài sản' : 'Thêm tài sản đầu tư'}</h2>
+        <form onSubmit={handleSubmit} className="space-y-3 overflow-y-auto">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Tên tài sản</label>
