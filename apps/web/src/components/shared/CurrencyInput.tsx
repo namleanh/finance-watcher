@@ -30,24 +30,18 @@ export default function CurrencyInput({ value, onChange, className, currency, ra
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value;
-    const isTrailingComma = val.endsWith(',');
-    let rawStr = val;
-    if (isTrailingComma) {
-      rawStr = val.slice(0, -1) + '.';
-    } else {
-      const commaCount = (val.match(/,/g) || []).length;
-      const dotCount = (val.match(/\./g) || []).length;
-      if (commaCount === 1 && dotCount === 0) {
-        rawStr = val.replace(',', '.');
-      }
-    }
-
+    
+    // 1. Strip all commas (thousands separators)
+    let rawStr = val.replace(/,/g, '');
+    
+    // 2. Only allow numbers and one dot
     rawStr = rawStr.replace(/[^0-9.]/g, '');
     const parts = rawStr.split('.');
     if (parts.length > 2) {
       rawStr = parts[0] + '.' + parts.slice(1).join('');
     }
 
+    // 3. Format displayValue
     const finalParts = rawStr.split('.');
     let intPart = finalParts[0] || '';
     if (intPart) {
