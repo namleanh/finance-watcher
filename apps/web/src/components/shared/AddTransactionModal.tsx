@@ -180,9 +180,17 @@ export default function AddTransactionModal({ open, onClose }: Props) {
 
           {/* Amount */}
           <div className="flex gap-2">
-            <div className="flex-1">
-              <label className="text-xs font-medium text-slate-400 uppercase mb-2 block">Số tiền</label>
-              <CurrencyInput value={amount} onChange={e => setAmount(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500" />
+            <div className="flex-1 min-w-0">
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 block">Số tiền</label>
+              <CurrencyInput
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                currency={currency}
+                rate={getRate(currency)}
+                placeholder="0"
+                required
+                className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500"
+              />
             </div>
             <div className="w-24">
               <label className="text-xs font-medium text-slate-400 uppercase mb-2 block">Đơn vị</label>

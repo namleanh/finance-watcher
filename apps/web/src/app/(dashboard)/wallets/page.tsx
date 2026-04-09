@@ -164,17 +164,14 @@ function WalletModal({ open, onClose, editWallet }: WalletModalProps) {
               <CurrencyInput
                 value={balance}
                 onChange={e => setBalance(e.target.value)}
+                currency={currency}
+                rate={getRate(currency)}
                 placeholder="0"
                 min="0"
                 className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
               <div className="w-16 flex items-center justify-center font-bold text-slate-400 text-sm">{currency}</div>
             </div>
-            {currency !== 'VND' && (
-              <p className="text-[10px] text-indigo-500 font-medium mt-1.5 ml-1">
-                ≈ {(parseFloat(balance || '0') * getRate(currency)).toLocaleString('vi-VN')} VND
-              </p>
-            )}
             <p className="text-xs text-slate-400 mt-1.5">Số dư sẽ tự động cập nhật khi bạn thêm giao dịch</p>
           </div>
 
