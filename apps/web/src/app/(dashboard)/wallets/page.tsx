@@ -309,7 +309,7 @@ export default function WalletsPage() {
                     </p>
                     {wallet.currency !== 'VND' && (
                       <p className="text-[11px] font-medium text-indigo-500 mt-0.5">
-                        ≈ {toVND(wallet.balance, wallet.currency as Currency).toLocaleString('vi-VN')} VND
+                        ≈ {toVND(wallet.balance, wallet.currency as Currency).toLocaleString('en-US')} VND
                       </p>
                     )}
                   </div>

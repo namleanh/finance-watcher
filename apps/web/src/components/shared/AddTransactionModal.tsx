@@ -196,13 +196,21 @@ export default function AddTransactionModal({ open, onClose }: Props) {
             </div>
             <div className="w-24">
               <label className="text-xs font-medium text-slate-400 uppercase mb-2 block">Đơn vị</label>
-              <select value={currency} onChange={e => setCurrency(e.target.value as Currency)} className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-2 py-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500">
+              <select 
+                value={currency} 
+                onChange={e => {
+                  setCurrency(e.target.value as Currency);
+                  setAmount('');
+                  setCurrentPrice('');
+                }} 
+                className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-2 py-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500"
+              >
                 {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
               </select>
               {currency !== 'VND' && (
                 <div className="mt-1.5 px-1 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                   <p className="text-[10px] text-slate-400 font-medium">
-                    1 {currency} ≈ {getRate(currency).toLocaleString('vi-VN')} VND
+                    1 {currency} ≈ {getRate(currency).toLocaleString('en-US')} VND
                   </p>
                 </div>
               )}

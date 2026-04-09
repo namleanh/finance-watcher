@@ -246,7 +246,7 @@ export default function PortfolioTable() {
                             {a.ticker && <p className="text-xs text-slate-500 dark:text-slate-400">{a.ticker}</p>}
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-300">{a.units.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-300">{a.units.toLocaleString('en-US')}</td>
                         <td className="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-300">{formatCurrency(a.costBasis, a.currency as Currency)}</td>
                         <td className="px-4 py-3 text-right text-sm text-slate-900 dark:text-slate-200 font-medium">{formatCurrency(a.currentPrice, a.currency as Currency)}</td>
                         <td className="px-4 py-3 text-right text-sm text-indigo-600 dark:text-indigo-400 font-semibold">{formatCurrency(value, a.currency as Currency, true)}</td>
@@ -291,7 +291,7 @@ export default function PortfolioTable() {
                         <h4 className="font-bold text-slate-900 dark:text-white truncate">{a.name}</h4>
                         <div className="flex items-center gap-2 mt-0.5">
                           {a.ticker && <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-mono font-medium">{a.ticker}</span>}
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400">{a.units.toLocaleString()} đơn vị</span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400">{a.units.toLocaleString('en-US')} đơn vị</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-1">

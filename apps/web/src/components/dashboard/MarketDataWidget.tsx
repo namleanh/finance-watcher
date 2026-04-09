@@ -17,7 +17,7 @@ export default function MarketDataWidget() {
   const [calcQuantity, setCalcQuantity] = useState<number | string>(1);
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN').format(price);
+    return new Intl.NumberFormat('en-US').format(price);
   };
 
   const calculateTotal = () => {
