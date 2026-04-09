@@ -31,6 +31,11 @@ export default function CurrencyInput({ value, onChange, className, currency, ra
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value;
     
+    // Support comma as decimal separator (especially on mobile)
+    if (val.endsWith(',') && !val.includes('.')) {
+      val = val.slice(0, -1) + '.';
+    }
+    
     // 1. Strip all commas (thousands separators)
     let rawStr = val.replace(/,/g, '');
     

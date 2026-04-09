@@ -284,7 +284,12 @@ export default function AddTransactionModal({ open, onClose }: Props) {
                     <input
                       type="text" inputMode="decimal"
                       value={units} onChange={e => {
-                        const val = e.target.value.replace(',', '.');
+                        let val = e.target.value;
+                        if (val.endsWith(',') && !val.includes('.')) {
+                          val = val.slice(0, -1) + '.';
+                        } else {
+                          val = val.replace(',', '.');
+                        }
                         if (/^[0-9.]*$/.test(val)) setUnits(val);
                       }}
                       placeholder="10.5" required
