@@ -8,15 +8,18 @@ export class PortfolioService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(userId: string) {
-    const assets = await this.prisma.portfolioAsset.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        wallet: { select: { name: true } },
-        transaction: { select: { id: true } },
-      },
-    });
-    return assets.map(a => this.serialize(a));
+    const [assets, rates] = await Promise.all([
+      this.prisma.portfolioAsset.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          wallet: { select: { name: true } },
+          transaction: { select: { id: true } },
+        },
+      }),
+      this.getMarketRates()
+    ]);
+    return assets.map(a => this.serialize(a, rates));
   }
 
   async findOne(id: string, userId: string) {
@@ -29,7 +32,8 @@ export class PortfolioService {
     });
     if (!a) throw new NotFoundException('Asset not found');
     if (a.userId !== userId) throw new ForbiddenException();
-    return this.serialize(a);
+    const rates = await this.getMarketRates();
+    return this.serialize(a, rates);
   }
 
   async create(userId: string, dto: CreatePortfolioAssetDto) {
@@ -145,25 +149,64 @@ export class PortfolioService {
   }
 
   async getSummary(userId: string) {
-    const assets = await this.prisma.portfolioAsset.findMany({ where: { userId } });
+    const [assets, marketData] = await Promise.all([
+      this.prisma.portfolioAsset.findMany({ where: { userId } }),
+      this.prisma.marketData.findMany({
+        where: { 
+          OR: [{ type: 'CURRENCY' }, { type: 'GOLD' }]
+        }
+      })
+    ]);
+
+    const rates: Record<string, number> = { VND: 1 };
+    marketData.forEach(m => {
+      rates[m.symbol] = Number(m.price);
+    });
+
     let totalCost = 0;
     let totalValue = 0;
     for (const a of assets) {
       const units = Number(a.units);
-      totalCost += Number(a.costBasis) * units;
-      totalValue += Number(a.currentPrice) * units;
+      const rate = rates[a.currency] || 1;
+      
+      // Cost calculation
+      totalCost += Number(a.costBasis) * units * rate;
+      
+      // Value calculation with live price fallback
+      let price = Number(a.currentPrice);
+      if (a.ticker && rates[a.ticker]) {
+        price = rates[a.ticker];
+      }
+      
+      totalValue += price * units * rate;
     }
     const pnl = totalValue - totalCost;
     const pnlPct = totalCost > 0 ? (pnl / totalCost) * 100 : 0;
     return { totalCost, totalValue, pnl, pnlPct, count: assets.length };
   }
 
-  private serialize(a: any) {
+  private async getMarketRates() {
+    const marketData = await this.prisma.marketData.findMany({
+      where: { 
+        OR: [{ type: 'CURRENCY' }, { type: 'GOLD' }, { type: 'STOCK' }]
+      }
+    });
+    const rates: Record<string, number> = { VND: 1 };
+    marketData.forEach(m => rates[m.symbol] = Number(m.price));
+    return rates;
+  }
+
+  private serialize(a: any, rates?: Record<string, number>) {
+    let currentPrice = Number(a.currentPrice);
+    if (rates && a.ticker && rates[a.ticker]) {
+      currentPrice = rates[a.ticker];
+    }
+
     return {
       ...a,
       units: Number(a.units),
       costBasis: Number(a.costBasis),
-      currentPrice: Number(a.currentPrice),
+      currentPrice,
       walletName: a.wallet ? decryptField(a.wallet.name, a.userId) : null,
     };
   }

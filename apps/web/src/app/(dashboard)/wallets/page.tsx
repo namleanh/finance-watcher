@@ -3,7 +3,10 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, Wallet, Building2, Smartphone, CreditCard, Coins, Edit2 } from 'lucide-react';
 import { useWallets, useCreateWallet, useDeleteWallet, useUpdateWallet, Wallet as WalletType } from '@/hooks/api/useWallets';
+import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
 import { formatCurrency } from '@/lib/exchangeRate';
+import { Currency } from '@/lib/types';
+import { CURRENCIES } from '@/lib/constants';
 import Header from '@/components/layout/Header';
 import DeleteConfirmModal from '@/components/shared/DeleteConfirmModal';
 import CurrencyInput from '@/components/shared/CurrencyInput';
@@ -33,10 +36,12 @@ interface WalletModalProps {
 function WalletModal({ open, onClose, editWallet }: WalletModalProps) {
   const { mutateAsync: create, isPending: isCreating } = useCreateWallet();
   const { mutateAsync: update, isPending: isUpdating } = useUpdateWallet();
+  const { getRate } = useCurrencyConverter();
 
   const [name, setName] = useState(editWallet?.name || '');
   const [type, setType] = useState<string>(editWallet?.type || 'CASH');
   const [balance, setBalance] = useState(editWallet?.balance?.toString() || '');
+  const [currency, setCurrency] = useState<Currency>((editWallet?.currency as Currency) || 'VND');
   const [color, setColor] = useState(editWallet?.color || PRESET_COLORS[0]);
 
   React.useEffect(() => {
@@ -44,11 +49,13 @@ function WalletModal({ open, onClose, editWallet }: WalletModalProps) {
       setName(editWallet.name);
       setType(editWallet.type);
       setBalance(editWallet.balance?.toString() || '0');
+      setCurrency((editWallet.currency as Currency) || 'VND');
       setColor(editWallet.color || PRESET_COLORS[0]);
     } else {
       setName('');
       setType('CASH');
       setBalance('');
+      setCurrency('VND');
       setColor(PRESET_COLORS[0]);
     }
   }, [editWallet, open]);
@@ -61,7 +68,7 @@ function WalletModal({ open, onClose, editWallet }: WalletModalProps) {
       name,
       type: type as any,
       balance: parseFloat(balance) || 0,
-      currency: 'VND',
+      currency,
       color,
     };
     try {
@@ -94,17 +101,31 @@ function WalletModal({ open, onClose, editWallet }: WalletModalProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {/* Name */}
-          <div>
-            <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 block">Tên ví</label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="Ví dụ: MBBank, MoMo..."
-              required
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+          {/* Name & Currency */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 block">Tên ví</label>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="Ví dụ: MBBank, MoMo..."
+                required
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 block">Loại tiền</label>
+              <select
+                value={currency}
+                onChange={e => setCurrency(e.target.value as Currency)}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                {CURRENCIES.map(c => (
+                  <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Type */}
@@ -137,15 +158,23 @@ function WalletModal({ open, onClose, editWallet }: WalletModalProps) {
           {/* Balance */}
           <div>
             <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 block">
-              Số dư hiện tại (VND)
+              Số dư hiện tại
             </label>
-            <CurrencyInput
-              value={balance}
-              onChange={e => setBalance(e.target.value)}
-              placeholder="0"
-              min="0"
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+            <div className="flex gap-2">
+              <CurrencyInput
+                value={balance}
+                onChange={e => setBalance(e.target.value)}
+                placeholder="0"
+                min="0"
+                className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <div className="w-16 flex items-center justify-center font-bold text-slate-400 text-sm">{currency}</div>
+            </div>
+            {currency !== 'VND' && (
+              <p className="text-[10px] text-indigo-500 font-medium mt-1.5 ml-1">
+                ≈ {(parseFloat(balance || '0') * getRate(currency)).toLocaleString('vi-VN')} VND
+              </p>
+            )}
             <p className="text-xs text-slate-400 mt-1.5">Số dư sẽ tự động cập nhật khi bạn thêm giao dịch</p>
           </div>
 
@@ -158,7 +187,7 @@ function WalletModal({ open, onClose, editWallet }: WalletModalProps) {
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
-                  className={`w-8 h-8 rounded-full border-2 transition-all ${color === c ? 'border-white scale-110 shadow-lg' : 'border-transparent'}`}
+                  className={`w-8 h-8 rounded-full border-2 transition-all ${color === c ? 'border-indigo-500 scale-110 shadow-lg' : 'border-transparent'}`}
                   style={{ backgroundColor: c }}
                 />
               ))}
@@ -181,11 +210,12 @@ function WalletModal({ open, onClose, editWallet }: WalletModalProps) {
 export default function WalletsPage() {
   const { data: wallets = [], isLoading } = useWallets();
   const { mutate: deleteWallet, isPending: isDeleting } = useDeleteWallet();
+  const { toVND } = useCurrencyConverter();
   const [showModal, setShowModal] = useState(false);
   const [editWallet, setEditWallet] = useState<WalletType | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const totalBalance = wallets.reduce((s, w) => s + w.balance, 0);
+  const totalBalance = wallets.reduce((s, w) => s + toVND(w.balance, w.currency as Currency), 0);
 
   const handleDelete = () => {
     if (deleteId) {

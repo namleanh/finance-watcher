@@ -15,36 +15,42 @@ export class AnalyticsService {
     const lastMonthStart = startOfMonth(new Date(now.getFullYear(), now.getMonth() - 1));
     const lastMonthEnd = endOfMonth(new Date(now.getFullYear(), now.getMonth() - 1));
 
-    // 1. Get transactions from the start of last month to now for monthly stats
-    // 2. Aggregate lifetime totals efficiently
-    // 3. Aggregate wallet/goal totals efficiently
-    const [periodTxns, lifetimeTxns, portfolioAssets, goalsAgg, walletsAgg, savingsDeposits] = await Promise.all([
+    const [periodTxns, portfolioAssets, goalsAgg, wallets, savingsDeposits, marketData] = await Promise.all([
       this.prisma.transaction.findMany({
         where: { userId, date: { gte: lastMonthStart } },
         select: { type: true, amount: true, date: true },
       }),
-      this.prisma.transaction.groupBy({
-        by: ['type'],
-        where: { userId },
-        _sum: { amount: true },
-      }),
       this.prisma.portfolioAsset.findMany({
         where: { userId },
-        select: { units: true, currentPrice: true },
+        select: { units: true, currentPrice: true, currency: true, ticker: true },
       }),
       this.prisma.savingsGoal.aggregate({
         where: { userId },
         _sum: { currentAmount: true, targetAmount: true },
       }),
-      this.prisma.wallet.aggregate({
+      this.prisma.wallet.findMany({
         where: { userId },
-        _sum: { balance: true },
+        select: { balance: true, currency: true },
       }),
       this.prisma.savingsDeposit.findMany({
         where: { userId, status: 'ACTIVE' },
         select: { depositAmount: true, interestRate: true, termMonths: true, maturityDate: true },
       }),
+      this.prisma.marketData.findMany({
+        where: { 
+          OR: [
+            { type: 'CURRENCY' },
+            { type: 'GOLD' }
+          ]
+        }
+      }),
     ]);
+
+    // Create a lookup for currency rates (relative to 1 unit = ? VND)
+    const rates: Record<string, number> = { VND: 1 };
+    marketData.forEach(m => {
+      rates[m.symbol] = Number(m.price);
+    });
 
     const sumByType = (txns: any[], type: string, start?: Date, end?: Date) =>
       txns
@@ -58,23 +64,28 @@ export class AnalyticsService {
     const lastIncome = sumByType(periodTxns, 'INCOME', lastMonthStart, lastMonthEnd);
     const lastExpense = sumByType(periodTxns, 'EXPENSE', lastMonthStart, lastMonthEnd);
 
-    // Lifetime totals from grouped aggregation
-    const getLifetimeSum = (type: string) => 
-      Number(lifetimeTxns.find(t => t.type === type)?._sum?.amount || 0);
+    // Calculate Portfolio Value with live prices where possible
+    const portfolioValue = portfolioAssets.reduce((sum, asset) => {
+      let price = Number(asset.currentPrice);
+      // If we have a live market price for this ticker/symbol, use it
+      if (asset.ticker && rates[asset.ticker]) {
+        price = rates[asset.ticker];
+      }
+      
+      const valueInOriginalCurrency = Number(asset.units) * price;
+      const rate = rates[asset.currency] || 1;
+      return sum + (valueInOriginalCurrency * rate);
+    }, 0);
 
-    const totalIncome = getLifetimeSum('INCOME');
-    const totalExpense = getLifetimeSum('EXPENSE');
-    const totalSaving = getLifetimeSum('SAVING');
-    const totalInvestment = getLifetimeSum('INVESTMENT');
+    // Calculate Wallet Balance in VND
+    const totalWalletBalance = wallets.reduce((sum, w) => {
+      const rate = rates[w.currency] || 1;
+      return sum + (Number(w.balance) * rate);
+    }, 0);
 
-    const portfolioValue = portfolioAssets.reduce(
-      (s, a) => s + Number(a.currentPrice) * Number(a.units), 0);
-
-    const totalWalletBalance = Number(walletsAgg._sum?.balance || 0);
     const totalGoalCurrent = Number(goalsAgg._sum?.currentAmount || 0);
     const totalGoalTarget = Number(goalsAgg._sum?.targetAmount || 0);
 
-    // Tổng tiết kiệm có kỳ hạn: gốc luôn cộng, lãi chỉ cộng khi đã đáo hạn
     const totalDeposits = savingsDeposits.reduce((s, d) => {
       const principal = Number(d.depositAmount);
       const isMatured = new Date(d.maturityDate) <= now;
@@ -84,7 +95,6 @@ export class AnalyticsService {
       return s + principal + interest;
     }, 0);
 
-    // Tài sản ròng = Ví + Danh mục đầu tư + Mục tiêu tiết kiệm + Tiết kiệm có kỳ hạn
     const totalAssets = totalWalletBalance + portfolioValue + totalGoalCurrent + totalDeposits;
 
     return {
