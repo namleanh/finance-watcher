@@ -20,13 +20,13 @@ export const useCurrencyConverter = () => {
 
   const toVND = (amount: number, from: Currency): number => {
     if (from === 'VND') return amount;
-    const rate = rates[from] || STATIC_RATES[from] || 1;
+    const rate = rates[from] || STATIC_RATES[from] || 0;
     return amount * rate;
   };
 
   const fromVND = (amount: number, to: Currency): number => {
     if (to === 'VND') return amount;
-    const rate = rates[to] || STATIC_RATES[to] || 1;
+    const rate = rates[to] || STATIC_RATES[to] || 0;
     return rate > 0 ? amount / rate : 0;
   };
 

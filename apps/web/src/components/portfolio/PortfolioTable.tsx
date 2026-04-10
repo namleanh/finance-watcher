@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Trash2, Edit2, Plus, TrendingUp, TrendingDown, X } from 'lucide-react';
 import { usePortfolioAssets, usePortfolioSummary, useCreatePortfolioAsset, useUpdatePortfolioAsset, useDeletePortfolioAsset, PortfolioAsset } from '@/hooks/api/usePortfolio';
+import { usePrivacy } from '@/context/PrivacyContext';
 import { useWallets } from '@/hooks/api/useWallets';
 import { formatCurrency } from '@/lib/exchangeRate';
 import { Currency } from '@/lib/types';
@@ -233,6 +234,7 @@ export default function PortfolioTable() {
   
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<PortfolioAsset | undefined>();
+  const { maskValue } = usePrivacy();
 
   if (isLoading) {
     return (
@@ -257,7 +259,7 @@ export default function PortfolioTable() {
         ].map(card => (
           <div key={card.label} className="rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 px-4 py-3">
             <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">{card.label}</p>
-            <p className={`text-lg sm:text-xl font-bold ${card.color}`}>{card.value}</p>
+            <p className={`text-lg sm:text-xl font-bold ${card.color}`}>{maskValue(card.value, 'INVESTMENTS')}</p>
           </div>
         ))}
       </div>

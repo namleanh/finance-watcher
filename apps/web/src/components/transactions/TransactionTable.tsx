@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Trash2, Filter, Search, ChevronLeft, ChevronRight, CreditCard } from 'lucide-react';
+import { Trash2, Filter, Search, ChevronLeft, ChevronRight, CreditCard, Eye, EyeOff } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useTransactions, useDeleteTransaction } from '@/hooks/api/useTransactions';
 import { CATEGORIES } from '@/lib/constants';
 import { formatCurrency } from '@/lib/exchangeRate';
 import DeleteConfirmModal from '@/components/shared/DeleteConfirmModal';
+import { usePrivacy, PrivacyCategory } from '@/context/PrivacyContext';
 
 const TYPE_COLORS: Record<string, string> = {
   INCOME: 'text-emerald-400 bg-emerald-400/10',
@@ -24,6 +25,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default function TransactionTable() {
+  const { maskValue, isCategoryHidden, toggleCategory } = usePrivacy();
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterCat, setFilterCat] = useState('');
@@ -94,6 +96,19 @@ export default function TransactionTable() {
           >
             <Filter size={14} />
             <span className="hidden sm:inline">Lọc</span>
+          </button>
+          
+          <button
+            onClick={() => {
+              const hide = !isCategoryHidden('INCOME');
+              toggleCategory('INCOME');
+              toggleCategory('SAVINGS');
+              toggleCategory('INVESTMENTS');
+            }}
+            className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:text-indigo-500 transition-colors"
+            title={isCategoryHidden('INCOME') ? 'Hiện số liệu' : 'Ẩn số liệu'}
+          >
+            {isCategoryHidden('INCOME') ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
         </div>
 
@@ -213,10 +228,10 @@ export default function TransactionTable() {
                     </td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
                       <span className={`text-sm font-semibold ${t.type === 'INCOME' ? 'text-emerald-500 dark:text-emerald-400' : t.type === 'EXPENSE' ? 'text-rose-500 dark:text-rose-400' : 'text-slate-900 dark:text-slate-200'}`}>
-                        {t.type === 'EXPENSE' ? '-' : '+'}{formatCurrency(t.originalAmount, t.originalCurrency, false)}
+                        {t.type === 'EXPENSE' ? '-' : '+'}{maskValue(formatCurrency(t.originalAmount, t.originalCurrency, false), (t.type === 'INVESTMENT' ? 'INVESTMENTS' : t.type === 'SAVING' ? 'SAVINGS' : t.type) as PrivacyCategory)}
                       </span>
                       {t.originalCurrency !== 'VND' && (
-                        <p className="text-[10px] text-slate-500">{formatCurrency(t.amount, 'VND', true)}</p>
+                        <p className="text-[10px] text-slate-500">{maskValue(formatCurrency(t.amount, 'VND', true), (t.type === 'INVESTMENT' ? 'INVESTMENTS' : t.type === 'SAVING' ? 'SAVINGS' : t.type) as PrivacyCategory)}</p>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -257,7 +272,7 @@ export default function TransactionTable() {
                 <div className="flex items-center gap-3 shrink-0">
                   <div className="text-right">
                     <p className={`text-sm font-bold ${t.type === 'INCOME' ? 'text-emerald-500' : t.type === 'EXPENSE' ? 'text-rose-500' : 'dark:text-white'}`}>
-                      {t.type === 'EXPENSE' ? '-' : '+'}{formatCurrency(t.originalAmount, t.originalCurrency, false)}
+                      {t.type === 'EXPENSE' ? '-' : '+'}{maskValue(formatCurrency(t.originalAmount, t.originalCurrency, false), (t.type === 'INVESTMENT' ? 'INVESTMENTS' : t.type === 'SAVING' ? 'SAVINGS' : t.type) as PrivacyCategory)}
                     </p>
                     <p className={`text-[10px] font-medium opacity-80 mt-0.5 ${TYPE_COLORS[t.type]?.split(' ')[0] || 'text-slate-500'}`}>
                       {TYPE_LABELS[t.type]}

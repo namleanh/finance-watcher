@@ -3,10 +3,11 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { LogOut, User } from 'lucide-react';
+import { formatCurrency } from '@/lib/exchangeRate';
+import { usePrivacy } from '@/context/PrivacyContext';
+import { Eye, EyeOff, LogOut, User } from 'lucide-react';
 import { useDashboardSummary } from '@/hooks/api/useAnalytics';
 import { useUser, useLogout } from '@/hooks/api/useAuth';
-import { formatCurrency } from '@/lib/exchangeRate';
 
 interface HeaderProps {
   title: string;
@@ -17,6 +18,7 @@ export default function Header({ title, subtitle }: HeaderProps) {
   const { data: stats } = useDashboardSummary();
   const { data: user } = useUser();
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
+  const { toggleCategory, maskValue, isCategoryHidden } = usePrivacy();
   
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -40,9 +42,17 @@ export default function Header({ title, subtitle }: HeaderProps) {
         <div className="hidden sm:flex flex-col items-end">
           <span className="text-xs text-slate-500 dark:text-slate-400">Tổng tài sản ước tính</span>
           <span className="text-lg font-bold text-emerald-500 dark:text-emerald-400">
-            {formatCurrency(netWorth, 'VND', true)}
+            {maskValue(formatCurrency(netWorth, 'VND', true), 'NET_WORTH')}
           </span>
         </div>
+
+        <button
+          onClick={() => toggleCategory('NET_WORTH')}
+          className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-indigo-500 transition-colors"
+          title={isCategoryHidden('NET_WORTH') ? 'Hiện số liệu' : 'Ẩn số liệu'}
+        >
+          {isCategoryHidden('NET_WORTH') ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
         
         <div className="relative">
           <button 

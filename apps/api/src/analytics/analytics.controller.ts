@@ -28,4 +28,9 @@ export class AnalyticsController {
     const m = parseInt(month) || new Date().getMonth() + 1;
     return this.analyticsService.getSpendingByCategory(req.user.id, y, m);
   }
+
+  @Get('cashflow')
+  getCashflowTrend(@Query('range') range: '1D' | '1W' | '1M' | '1Y', @Request() req) {
+    return this.analyticsService.getCashflowTrend(req.user.id, range || '1M');
+  }
 }

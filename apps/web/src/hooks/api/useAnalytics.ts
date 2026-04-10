@@ -38,3 +38,14 @@ export const useSpendingByCategory = (year: number, month: number) => {
     enabled: !!year && !!month,
   });
 };
+
+export const useCashflowTrend = (range: string) => {
+  return useQuery({
+    queryKey: ['analytics', 'cashflow', range],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/analytics/cashflow', { params: { range } });
+      return data;
+    },
+    enabled: !!range,
+  });
+};

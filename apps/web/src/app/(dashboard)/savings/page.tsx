@@ -12,6 +12,7 @@ import Header from '@/components/layout/Header';
 import DeleteConfirmModal from '@/components/shared/DeleteConfirmModal';
 import CurrencyInput from '@/components/shared/CurrencyInput';
 import { Currency } from '@/lib/types';
+import { usePrivacy } from '@/context/PrivacyContext';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 const TERM_OPTIONS = [
@@ -239,6 +240,7 @@ export default function SavingsDepositsPage() {
   const { toVND } = useCurrencyConverter();
   const [showModal, setShowModal] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const { maskValue } = usePrivacy();
 
   const totalDeposited = deposits
     .filter(d => d.status === 'ACTIVE')
@@ -268,7 +270,7 @@ export default function SavingsDepositsPage() {
                 </div>
               </div>
               <p className="text-2xl font-bold">
-                {isCount ? `${value} sổ` : formatCurrency(value as number, 'VND', true)}
+                {isCount ? `${value} sổ` : maskValue(formatCurrency(value as number, 'VND', true), 'SAVINGS')}
               </p>
             </div>
           ))}

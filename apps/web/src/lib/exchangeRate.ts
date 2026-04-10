@@ -12,9 +12,10 @@ export function convertCurrency(
   to: Currency
 ): number {
   if (from === to) return amount;
-  // Convert to USD first, then to target currency
-  const inUSD = amount / EXCHANGE_RATES[from];
-  return inUSD * EXCHANGE_RATES[to];
+  // Rates are now VND per 1 unit of currency
+  // Convert fromSource to VND first, then from VND to Target
+  const amountInVND = amount * EXCHANGE_RATES[from];
+  return amountInVND / EXCHANGE_RATES[to];
 }
 
 /**
@@ -32,21 +33,24 @@ export function formatCurrency(
   currency: Currency = 'VND',
   compact = false
 ): string {
-  if (amount == null || isNaN(amount)) {
-    amount = 0;
+  if (currency === 'VND' && compact) {
+    if (Math.abs(amount) >= 1_000_000_000) {
+      const val = amount / 1_000_000_000;
+      return `${Number(val.toFixed(1))}B\u00A0đ`;
+    }
+    if (Math.abs(amount) >= 1_000_000) {
+      const val = amount / 1_000_000;
+      return `${Number(val.toFixed(1))}tr\u00A0đ`;
+    }
+    if (Math.abs(amount) >= 1_000) {
+      const val = amount / 1_000;
+      return `${Number(val.toFixed(1))}k\u00A0đ`;
+    }
+    return `${Math.round(amount)}\u00A0đ`;
   }
-
-  // Compact logic disabled per user request to show exact digits
-  /*
-  if (compact && Math.abs(amount) >= 1_000_000) {
-    const val = amount / 1_000_000;
-    const formatted = val % 1 === 0 ? val.toFixed(0) : val.toFixed(1);
-    return `${formatted}M`;
-  }
-  */
 
   const symbols: Record<Currency, string> = { 
-    VND: '₫', USD: '$', MYR: 'RM', EUR: '€', JPY: '¥', GBP: '£', AUD: 'A$', SGD: 'S$', KRW: '₩' 
+    VND: 'đ', USD: '$', MYR: 'RM', EUR: '€', JPY: '¥', GBP: '£', AUD: 'A$', SGD: 'S$', KRW: '₩' 
   };
   const sym = symbols[currency];
 
@@ -64,16 +68,25 @@ export async function fetchLiveRates(apiKey: string): Promise<Record<Currency, n
   try {
     const res = await fetch(`https://v6.exchangerate-api.com/v6/${apiKey}/latest/USD`);
     const data = await res.json();
+    const usdToVnd = data.conversion_rates.VND ?? EXCHANGE_RATES.VND;
+    
+    const convert = (target: Currency) => {
+      const usdToTarget = data.conversion_rates[target];
+      if (!usdToTarget) return EXCHANGE_RATES[target];
+      // Convert USD-based rate to VND-based rate: (VND/USD) / (Unit/USD) = VND/Unit
+      return usdToVnd / usdToTarget;
+    };
+
     return {
-      USD: 1,
-      VND: data.conversion_rates.VND ?? EXCHANGE_RATES.VND,
-      MYR: data.conversion_rates.MYR ?? EXCHANGE_RATES.MYR,
-      EUR: data.conversion_rates.EUR ?? EXCHANGE_RATES.EUR,
-      JPY: data.conversion_rates.JPY ?? EXCHANGE_RATES.JPY,
-      GBP: data.conversion_rates.GBP ?? EXCHANGE_RATES.GBP,
-      AUD: data.conversion_rates.AUD ?? EXCHANGE_RATES.AUD,
-      SGD: data.conversion_rates.SGD ?? EXCHANGE_RATES.SGD,
-      KRW: data.conversion_rates.KRW ?? EXCHANGE_RATES.KRW,
+      VND: 1,
+      USD: usdToVnd,
+      MYR: convert('MYR'),
+      EUR: convert('EUR'),
+      JPY: convert('JPY'),
+      GBP: convert('GBP'),
+      AUD: convert('AUD'),
+      SGD: convert('SGD'),
+      KRW: convert('KRW'),
     };
   } catch {
     return EXCHANGE_RATES;

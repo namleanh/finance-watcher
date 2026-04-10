@@ -5,7 +5,7 @@ import Header from '@/components/layout/Header';
 import OverviewCards from '@/components/dashboard/OverviewCards';
 import MarketDataWidget from '@/components/dashboard/MarketDataWidget';
 import SpendingPieChart from '@/components/dashboard/SpendingPieChart';
-import NetWorthLineChart from '@/components/dashboard/NetWorthLineChart';
+import CashflowTrendChart from '@/components/dashboard/CashflowTrendChart';
 import TransactionTable from '@/components/transactions/TransactionTable';
 import AddTransactionModal from '@/components/shared/AddTransactionModal';
 import { Plus } from 'lucide-react';
@@ -23,7 +23,7 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <SpendingPieChart />
-          <NetWorthLineChart />
+          <CashflowTrendChart />
         </div>
 
         <div>

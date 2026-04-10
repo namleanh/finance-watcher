@@ -5,6 +5,7 @@ import { TrendingUp, TrendingDown, PiggyBank, Briefcase } from 'lucide-react';
 import { useDashboardSummary } from '@/hooks/api/useAnalytics';
 import { formatCurrency } from '@/lib/exchangeRate';
 import { StatCard } from '@/components/shared/StatCard';
+import { usePrivacy } from '@/context/PrivacyContext';
 
 export default function OverviewCards() {
   const { data: stats, isLoading } = useDashboardSummary();
@@ -27,6 +28,7 @@ export default function OverviewCards() {
         icon={<TrendingUp size={20} />}
         gradient="bg-gradient-to-br from-indigo-500 to-violet-600"
         sub="Tổng tích lũy"
+        privacyCategory="NET_WORTH"
       />
       <StatCard
         title="Chi tiêu tháng này"
@@ -35,6 +37,8 @@ export default function OverviewCards() {
         icon={<TrendingDown size={20} />}
         gradient="bg-gradient-to-br from-rose-500 to-pink-600"
         sub={`Thu nhập: ${formatCurrency(stats.thisMonth.income, 'VND', true)}`}
+        privacyCategory="EXPENSE"
+        subPrivacyCategory="INCOME"
       />
       <StatCard
         title="Tổng tiết kiệm"
@@ -42,12 +46,14 @@ export default function OverviewCards() {
         icon={<PiggyBank size={20} />}
         gradient="bg-gradient-to-br from-emerald-500 to-teal-600"
         sub={`Tiến độ mục tiêu: ${stats.savingPercent.toFixed(0)}%`}
+        privacyCategory="SAVINGS"
       />
       <StatCard
         title="Danh mục đầu tư"
         value={formatCurrency(stats.portfolioValue, 'VND', true)}
         icon={<Briefcase size={20} />}
         gradient="bg-gradient-to-br from-amber-500 to-orange-600"
+        privacyCategory="INVESTMENTS"
       />
     </div>
   );

@@ -1,20 +1,20 @@
 import { Currency, TransactionType } from './types';
 
-// Exchange rates relative to USD (placeholder — swap in real API via exchangeRate.ts)
+// Exchange rates relative to VND (VND per 1 unit of currency)
 export const EXCHANGE_RATES: Record<Currency, number> = {
-  USD: 1,
-  VND: 25400,
-  MYR: 4.7,
-  EUR: 0.92,
-  JPY: 152,
-  GBP: 0.79,
-  AUD: 1.53,
-  SGD: 1.35,
-  KRW: 1360,
+  VND: 1,
+  USD: 25400,
+  MYR: 5400,
+  EUR: 27600,
+  JPY: 167,
+  GBP: 32150,
+  AUD: 16600,
+  SGD: 18814,
+  KRW: 18.67,
 };
 
 export const CURRENCIES: { code: Currency; label: string; symbol: string }[] = [
-  { code: 'VND', label: 'Vietnamese Dong', symbol: '₫' },
+  { code: 'VND', label: 'Vietnamese Dong', symbol: 'đ' },
   { code: 'USD', label: 'US Dollar', symbol: '$' },
   { code: 'MYR', label: 'Malaysian Ringgit', symbol: 'RM' },
   { code: 'EUR', label: 'Euro', symbol: '€' },

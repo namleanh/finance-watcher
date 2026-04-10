@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSavingsDepositDto, UpdateSavingsDepositDto } from './dto/savings-deposit.dto';
 import { encryptField, decryptField, generateBlindIndex } from '../utils/crypto.util';
+import { toVND } from '../utils/exchange.util';
 
 @Injectable()
 export class SavingsDepositsService {
@@ -40,6 +41,7 @@ export class SavingsDepositsService {
 
     return this.prisma.$transaction(async (tx) => {
       let walletCurrency = 'VND';
+      let currentRate = 1;
 
       // 1. If walletId provided, handle balance and determine currency
       if (dto.walletId) {
@@ -51,6 +53,14 @@ export class SavingsDepositsService {
           throw new BadRequestException('Số dư ví không đủ để thực hiện khoản tiết kiệm này');
         }
         walletCurrency = wallet.currency || 'VND';
+
+        // Fetch live rate for conversion if not VND
+        if (walletCurrency !== 'VND') {
+          const marketData = await tx.marketData.findUnique({
+            where: { type_symbol: { type: 'CURRENCY', symbol: walletCurrency } }
+          });
+          currentRate = marketData ? Number(marketData.price) : toVND(1, walletCurrency);
+        }
 
         // Deduct from wallet
         await tx.wallet.update({
@@ -85,7 +95,7 @@ export class SavingsDepositsService {
             userId,
             walletId: dto.walletId,
             type: 'SAVING',
-            amount: depositAmount,
+            amount: BigInt(Math.round(Number(depositAmount) * currentRate)),
             originalAmount: depositAmount,
             originalCurrency: walletCurrency,
             category: encryptField('Tiết kiệm', userId) || 'Tiết kiệm',

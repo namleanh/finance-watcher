@@ -1,13 +1,13 @@
 export const EXCHANGE_RATES: Record<string, number> = {
-  USD: 1,
-  VND: 25400,
-  MYR: 4.7,
-  EUR: 0.92,
-  JPY: 152,
-  GBP: 0.79,
-  AUD: 1.53,
-  SGD: 1.35,
-  KRW: 1360,
+  VND: 1,
+  USD: 25400,
+  MYR: 5400,
+  EUR: 27600,
+  JPY: 167,
+  GBP: 32150,
+  AUD: 16600,
+  SGD: 18814,
+  KRW: 18.67,
 };
 
 export function convertCurrency(
@@ -16,9 +16,16 @@ export function convertCurrency(
   to: string
 ): number {
   if (from === to) return amount;
-  // Convert to USD first, then to target currency
-  const fromRate = EXCHANGE_RATES[from] || 1;
-  const toRate = EXCHANGE_RATES[to] || 1;
-  const inUSD = amount / fromRate;
-  return inUSD * toRate;
+  // Rates are VND per unit
+  const fromRate = EXCHANGE_RATES[from] || 0;
+  const toRate = EXCHANGE_RATES[to] || 0;
+  if (!fromRate || !toRate) return 0;
+
+  // Convert to VND first, then to target
+  const inVND = amount * fromRate;
+  return inVND / toRate;
+}
+
+export function toVND(amount: number, from: string): number {
+  return convertCurrency(amount, from, 'VND');
 }

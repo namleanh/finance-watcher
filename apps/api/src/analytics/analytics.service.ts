@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, subDays, subMonths, eachDayOfInterval, eachMonthOfInterval, eachHourOfInterval, subHours } from 'date-fns';
 import { decryptNote } from '../utils/crypto.util';
 
 @Injectable()
@@ -165,5 +165,78 @@ export class AnalyticsService {
       value,
       color: COLORS[i % COLORS.length],
     }));
+  }
+
+  // ── Cashflow Trend (dynamic ranges) ───────────────────────
+  async getCashflowTrend(userId: string, range: '1D' | '1W' | '1M' | '1Y' = '1M') {
+    const now = new Date();
+    let start: Date;
+    let buckets: { label: string; start: Date; end: Date }[] = [];
+
+    switch (range) {
+      case '1D':
+        start = subHours(now, 24);
+        buckets = eachHourOfInterval({ start, end: now }).map(h => ({
+          label: format(h, 'HH:mm'),
+          start: h,
+          end: new Date(h.getTime() + 3599999), // +59m 59s
+        }));
+        break;
+      case '1W':
+        start = subDays(now, 6);
+        buckets = eachDayOfInterval({ start, end: now }).map(d => ({
+          label: format(d, 'EEE'),
+          start: startOfDay(d),
+          end: endOfDay(d),
+        }));
+        break;
+      case '1M':
+        start = subDays(now, 29);
+        buckets = eachDayOfInterval({ start, end: now }).map(d => ({
+          label: format(d, 'dd/MM'),
+          start: startOfDay(d),
+          end: endOfDay(d),
+        }));
+        break;
+      case '1Y':
+        start = subMonths(now, 11);
+        buckets = eachMonthOfInterval({ start, end: now }).map(m => ({
+          label: format(m, 'MMM'),
+          start: startOfMonth(m),
+          end: endOfMonth(m),
+        }));
+        break;
+    }
+
+    const txns = await this.prisma.transaction.findMany({
+      where: {
+        userId,
+        date: { gte: start },
+      },
+      select: { type: true, amount: true, date: true },
+    });
+
+    const data = buckets.map(b => {
+      const bucketTxns = txns.filter(t => {
+        const d = new Date(t.date);
+        return d >= b.start && d <= b.end;
+      });
+
+      const income = bucketTxns.filter(t => t.type === 'INCOME').reduce((s, t) => s + Number(t.amount), 0);
+      const expense = bucketTxns.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + Number(t.amount), 0);
+      const saving = bucketTxns.filter(t => t.type === 'SAVING').reduce((s, t) => s + Number(t.amount), 0);
+      const investment = bucketTxns.filter(t => t.type === 'INVESTMENT').reduce((s, t) => s + Number(t.amount), 0);
+
+      return {
+        label: b.label,
+        income,
+        expense,
+        saving,
+        investment,
+        net: income - expense,
+      };
+    });
+
+    return data;
   }
 }

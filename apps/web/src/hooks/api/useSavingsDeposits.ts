@@ -36,6 +36,7 @@ export const useCreateSavingsDeposit = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['savings-deposits'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['wallets'] });
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },
@@ -50,6 +51,7 @@ export const useDeleteSavingsDeposit = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['savings-deposits'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['wallets'] });
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },

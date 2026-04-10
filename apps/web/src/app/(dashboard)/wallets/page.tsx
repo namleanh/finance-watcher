@@ -11,6 +11,7 @@ import { CURRENCIES } from '@/lib/constants';
 import Header from '@/components/layout/Header';
 import DeleteConfirmModal from '@/components/shared/DeleteConfirmModal';
 import CurrencyInput from '@/components/shared/CurrencyInput';
+import { usePrivacy } from '@/context/PrivacyContext';
 
 const WALLET_ICONS: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
   CASH: { icon: Coins, color: 'text-amber-500', bg: 'bg-amber-500/10' },
@@ -213,6 +214,7 @@ export default function WalletsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editWallet, setEditWallet] = useState<WalletType | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const { maskValue } = usePrivacy();
 
   const totalBalance = wallets.reduce((s, w) => s + toVND(w.balance, w.currency as Currency), 0);
 
@@ -230,7 +232,7 @@ export default function WalletsPage() {
         {/* Summary Card */}
         <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-700 p-6 text-white shadow-xl shadow-indigo-500/20">
           <p className="text-sm text-indigo-200 mb-1">Tổng số dư tất cả ví</p>
-          <p className="text-3xl font-bold">{formatCurrency(totalBalance, 'VND', true)}</p>
+          <p className="text-3xl font-bold">{maskValue(formatCurrency(totalBalance, 'VND', true), 'NET_WORTH')}</p>
           <p className="text-sm text-indigo-200 mt-2">{wallets.length} ví đang hoạt động</p>
         </div>
 
@@ -285,7 +287,7 @@ export default function WalletsPage() {
                         <p className="text-xs text-slate-500 dark:text-slate-400">{WALLET_TYPE_LABELS[wallet.type]}</p>
                       </div>
                     </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => { setEditWallet(wallet); setShowModal(true); }}
                         className="p-2.5 rounded-lg text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
@@ -305,11 +307,11 @@ export default function WalletsPage() {
 
                   <div className="mt-4">
                     <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                      {formatCurrency(wallet.balance, wallet.currency as Currency, true)}
+                      {maskValue(formatCurrency(wallet.balance, wallet.currency as Currency, true), 'NET_WORTH')}
                     </p>
                     {wallet.currency !== 'VND' && (
                       <p className="text-[11px] font-medium text-indigo-500 mt-0.5">
-                        ≈ {toVND(wallet.balance, wallet.currency as Currency).toLocaleString('en-US')} VND
+                        ≈ {maskValue(toVND(wallet.balance, wallet.currency as Currency).toLocaleString('en-US') + ' VND', 'NET_WORTH')}
                       </p>
                     )}
                   </div>
