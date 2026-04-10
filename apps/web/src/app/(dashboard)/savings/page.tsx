@@ -88,8 +88,8 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full sm:max-w-md bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-700 rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-200">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm touch-none" onClick={onClose} />
+      <div className="relative w-full sm:max-w-md bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-700 rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-200 overscroll-contain">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-2">
             <Landmark size={18} className="text-indigo-500" />
@@ -100,7 +100,7 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto no-scrollbar max-h-[80vh]">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto no-scrollbar max-h-[80vh] touch-pan-y">
           {/* Bank name */}
           <div>
             <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5 block">Ngân hàng</label>
@@ -158,21 +158,15 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
           {/* Term */}
           <div>
             <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5 block">Kỳ hạn</label>
-            <div className="flex flex-wrap gap-2">
+            <select
+              value={termMonths}
+              onChange={e => setTermMonths(Number(e.target.value))}
+              className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all"
+            >
               {TERM_OPTIONS.map(t => (
-                <button
-                  key={t.value} type="button"
-                  onClick={() => setTermMonths(t.value)}
-                  className={`py-1.5 px-3 rounded-lg text-xs font-medium border transition-all ${
-                    termMonths === t.value
-                      ? 'bg-indigo-600 border-indigo-600 text-white'
-                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-indigo-400'
-                  }`}
-                >
-                  {t.label}
-                </button>
+                <option key={t.value} value={t.value}>{t.label}</option>
               ))}
-            </div>
+            </select>
           </div>
 
           {/* Interest rate + Date */}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Trash2, Edit2, Plus, TrendingUp, TrendingDown } from 'lucide-react';
+import { Trash2, Edit2, Plus, TrendingUp, TrendingDown, X } from 'lucide-react';
 import { usePortfolioAssets, usePortfolioSummary, useCreatePortfolioAsset, useUpdatePortfolioAsset, useDeletePortfolioAsset, PortfolioAsset } from '@/hooks/api/usePortfolio';
 import { useWallets } from '@/hooks/api/useWallets';
 import { formatCurrency } from '@/lib/exchangeRate';
@@ -86,10 +86,15 @@ function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-6 animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-        <h2 className="font-semibold text-slate-900 dark:text-white mb-4 shrink-0">{editing ? 'Cập nhật tài sản' : 'Thêm tài sản đầu tư'}</h2>
-        <form onSubmit={handleSubmit} className="space-y-3 overflow-y-auto no-scrollbar">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm touch-none" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-6 animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] overscroll-contain">
+        <div className="flex items-center justify-between mb-4 shrink-0">
+          <h2 className="font-semibold text-slate-900 dark:text-white">{editing ? 'Cập nhật tài sản' : 'Thêm tài sản đầu tư'}</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors p-1">
+            <X size={20} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-3 overflow-y-auto no-scrollbar touch-pan-y">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Tên tài sản</label>
@@ -101,7 +106,7 @@ function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () 
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="relative">
+            <div className="relative p-0.5">
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Số lượng</label>
               <CurrencyInput value={units} onChange={e => { setUnits(e.target.value); setLastField('units'); }} required placeholder="100" className="w-full bg-white border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all" />
               {isInsufficient && !editing && lastField === 'units' && (
@@ -126,7 +131,7 @@ function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Giá vốn / cổ phiếu</label>
-            <div className="relative">
+            <div className="relative p-0.5">
               <CurrencyInput
                 value={costBasis}
                 onChange={e => { setCostBasis(e.target.value); setLastField('costBasis'); }}
@@ -148,7 +153,7 @@ function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () 
               )}
             </div>
             </div>
-            <div>
+            <div className="p-0.5">
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Giá hiện tại / cổ phiếu</label>
               <CurrencyInput
                 value={currentPrice}
