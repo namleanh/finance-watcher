@@ -82,6 +82,7 @@ export class TransactionsService {
 
   async create(userId: string, dto: CreateTransactionDto) {
     const amount = BigInt(Math.round(dto.amount));
+    const rates = await this.getMarketRates();
     
     return await this.prisma.$transaction(async (tx) => {
       const t = await tx.transaction.create({
@@ -127,7 +128,7 @@ export class TransactionsService {
           balanceChange = amount; // which is BigInt(Math.round(dto.amount))
         } else {
           // Cross-currency conversion
-          const converted = convertCurrency(dto.originalAmount, dto.originalCurrency, wallet.currency);
+          const converted = convertCurrency(dto.originalAmount, dto.originalCurrency, wallet.currency, rates);
           balanceChange = BigInt(Math.round(converted));
         }
 
@@ -204,6 +205,7 @@ export class TransactionsService {
     const newWalletId = dto.walletId !== undefined ? dto.walletId : oldT.walletId;
     const newGoalId = dto.goalId !== undefined ? dto.goalId : oldT.goalId;
     const newDepositId = dto.savingsDepositId !== undefined ? dto.savingsDepositId : oldT.savingsDepositId;
+    const rates = await this.getMarketRates();
 
     const [t] = await this.prisma.$transaction(async (tx) => {
       // 1. Revert old wallet balance
@@ -217,7 +219,7 @@ export class TransactionsService {
           } else if (wallet.currency === 'VND') {
             oldBalanceChange = oldT.amount;
           } else {
-            const converted = convertCurrency(Number(oldT.originalAmount), oldT.originalCurrency, wallet.currency);
+            const converted = convertCurrency(Number(oldT.originalAmount), oldT.originalCurrency, wallet.currency, rates);
             oldBalanceChange = BigInt(Math.round(converted));
           }
 
@@ -281,7 +283,8 @@ export class TransactionsService {
             const converted = convertCurrency(
               Number(dto.originalAmount || Number(oldT.originalAmount)),
               dto.originalCurrency || oldT.originalCurrency,
-              wallet.currency
+              wallet.currency,
+              rates
             );
             newBalanceChange = BigInt(Math.round(converted));
           }
@@ -320,6 +323,8 @@ export class TransactionsService {
     if (!t) throw new NotFoundException('Transaction not found');
     if (t.userId !== userId) throw new ForbiddenException();
 
+    const rates = await this.getMarketRates();
+
     return await this.prisma.$transaction(async (tx) => {
       // 1. Revert wallet balance
       if (t.walletId) {
@@ -332,7 +337,7 @@ export class TransactionsService {
           } else if (wallet.currency === 'VND') {
             balanceChange = t.amount;
           } else {
-            const converted = convertCurrency(Number(t.originalAmount), t.originalCurrency, wallet.currency);
+            const converted = convertCurrency(Number(t.originalAmount), t.originalCurrency, wallet.currency, rates);
             balanceChange = BigInt(Math.round(converted));
           }
 
@@ -402,5 +407,16 @@ export class TransactionsService {
       goalName: t.savingsGoal ? t.savingsGoal.name : null,
       depositBankName: t.savingsDeposit ? decryptNote(t.savingsDeposit.bankName, t.userId) : null,
     };
+  }
+
+  private async getMarketRates() {
+    const marketData = await this.prisma.marketData.findMany({
+      where: { 
+        OR: [{ type: 'CURRENCY' }, { type: 'GOLD' }, { type: 'STOCK' }]
+      }
+    });
+    const rates: Record<string, number> = { VND: 1 };
+    marketData.forEach(m => rates[m.symbol] = Number(m.price));
+    return rates;
   }
 }

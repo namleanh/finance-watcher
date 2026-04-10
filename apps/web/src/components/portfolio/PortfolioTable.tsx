@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Trash2, Edit2, Plus, TrendingUp, TrendingDown, X } from 'lucide-react';
+import { Trash2, Edit2, Plus, TrendingUp, TrendingDown, X, Eye, EyeOff, Banknote, Briefcase, PiggyBank, Landmark, LayoutGrid } from 'lucide-react';
 import { usePortfolioAssets, usePortfolioSummary, useCreatePortfolioAsset, useUpdatePortfolioAsset, useDeletePortfolioAsset, PortfolioAsset } from '@/hooks/api/usePortfolio';
 import { usePrivacy } from '@/context/PrivacyContext';
+import { StatCard } from '@/components/shared/StatCard';
 import { useWallets } from '@/hooks/api/useWallets';
 import { formatCurrency } from '@/lib/exchangeRate';
 import { Currency } from '@/lib/types';
@@ -183,7 +184,7 @@ function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () 
               >
                 <option value="">{compatibleWallets.length === 0 ? '-- Không có ví phù hợp --' : '-- Chọn ví --'}</option>
                 {compatibleWallets.map(w => (
-                  <option key={w.id} value={w.id}>{w.name} ({formatCurrency(w.balance, w.currency as Currency, true)})</option>
+                  <option key={w.id} value={w.id}>{w.name} ({formatCurrency(w.balance, w.currency as Currency, false)})</option>
                 ))}
               </select>
               {compatibleWallets.length === 0 && !editing && (
@@ -234,7 +235,7 @@ export default function PortfolioTable() {
   
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<PortfolioAsset | undefined>();
-  const { maskValue } = usePrivacy();
+  const { maskValue, isCategoryHidden, toggleCategory } = usePrivacy();
 
   if (isLoading) {
     return (
@@ -246,34 +247,50 @@ export default function PortfolioTable() {
 
   return (
     <div className="space-y-4">
-      {/* Summary row */}
+      {/* Summary Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          { label: 'Tổng giá vốn', value: formatCurrency(summary.totalCost, 'VND', true), color: 'text-slate-900 dark:text-slate-200' },
-          { label: 'Tổng thị giá', value: formatCurrency(summary.totalValue, 'VND', true), color: 'text-indigo-600 dark:text-indigo-400' },
-          {
-            label: 'Lãi / Lỗ (P&L)',
-            value: `${summary.pnl >= 0 ? '+' : ''}${formatCurrency(Math.abs(summary.pnl), 'VND', true)} (${summary.pnlPct.toFixed(2)}%)`,
-            color: summary.pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400',
-          },
-        ].map(card => (
-          <div key={card.label} className="rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 px-4 py-3">
-            <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">{card.label}</p>
-            <p className={`text-lg sm:text-xl font-bold ${card.color}`}>{maskValue(card.value, 'INVESTMENTS')}</p>
-          </div>
-        ))}
+        <StatCard
+          title="Tổng giá vốn"
+          value={formatCurrency(summary.totalCost, 'VND', false)}
+          icon={<Banknote size={20} />}
+          gradient="bg-gradient-to-br from-slate-500 to-slate-600"
+          privacyCategory="INVESTMENTS"
+        />
+        <StatCard
+          title="Tổng thị giá"
+          value={formatCurrency(summary.totalValue, 'VND', false)}
+          icon={<Briefcase size={20} />}
+          gradient="bg-gradient-to-br from-indigo-500 to-violet-600"
+          privacyCategory="INVESTMENTS"
+        />
+        <StatCard
+          title="Lãi / Lỗ (P&L)"
+          value={`${summary.pnl >= 0 ? '+' : ''}${formatCurrency(Math.abs(summary.pnl), 'VND', false)} (${summary.pnlPct.toFixed(2)}%)`}
+          icon={summary.pnl >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+          gradient={summary.pnl >= 0 ? "bg-gradient-to-br from-emerald-500 to-teal-600" : "bg-gradient-to-br from-rose-500 to-orange-600"}
+          privacyCategory="INVESTMENTS"
+        />
       </div>
 
       {/* Table */}
       <div className="rounded-2xl bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 overflow-hidden shadow-sm">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700/50">
           <h3 className="font-semibold text-slate-900 dark:text-white">Danh mục đầu tư</h3>
-          <button
-            onClick={() => { setEditing(undefined); setShowModal(true); }}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold transition-all"
-          >
-            <Plus size={14} /> Thêm tài sản
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => toggleCategory('INVESTMENT_DETAILS')}
+              className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:text-indigo-500 transition-colors"
+              title={isCategoryHidden('INVESTMENT_DETAILS') ? 'Hiện chi tiết' : 'Ẩn chi tiết'}
+            >
+              {isCategoryHidden('INVESTMENT_DETAILS') ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+            <button
+              onClick={() => { setEditing(undefined); setShowModal(true); }}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold transition-all"
+            >
+              <Plus size={14} /> Thêm tài sản
+            </button>
+          </div>
         </div>
         {assets.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-slate-500">
@@ -312,16 +329,16 @@ export default function PortfolioTable() {
                           </div>
                         </td>
                         <td className="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-300">{a.units.toLocaleString('en-US')}</td>
-                        <td className="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-300">{formatCurrency(a.costBasis, a.currency as Currency)}</td>
-                        <td className="px-4 py-3 text-right text-sm text-slate-900 dark:text-slate-200 font-medium">{formatCurrency(a.currentPrice, a.currency as Currency)}</td>
-                        <td className="px-4 py-3 text-right text-sm text-indigo-600 dark:text-indigo-400 font-semibold">{formatCurrency(value, a.currency as Currency, true)}</td>
+                        <td className="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-300">{maskValue(formatCurrency(a.costBasis, a.currency as Currency), 'INVESTMENT_DETAILS')}</td>
+                        <td className="px-4 py-3 text-right text-sm text-slate-900 dark:text-slate-200 font-medium">{maskValue(formatCurrency(a.currentPrice, a.currency as Currency), 'INVESTMENT_DETAILS')}</td>
+                        <td className="px-4 py-3 text-right text-sm text-indigo-600 dark:text-indigo-400 font-semibold">{maskValue(formatCurrency(value, a.currency as Currency, false), 'INVESTMENT_DETAILS')}</td>
                         <td className="px-4 py-3 text-right">
                           <div className={`flex items-center justify-end gap-1 ${pnl >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
                             {pnl >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                             <span className="text-xs font-semibold">{pnl >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%</span>
                           </div>
                           <p className={`text-[10px] text-right ${pnl >= 0 ? 'text-emerald-500/70 dark:text-emerald-400/70' : 'text-rose-500/70 dark:text-rose-400/70'}`}>
-                            {pnl >= 0 ? '+' : ''}{formatCurrency(Math.abs(pnl), a.currency as Currency, true)}
+                            {pnl >= 0 ? '+' : ''}{maskValue(formatCurrency(Math.abs(pnl), a.currency as Currency, false), 'INVESTMENT_DETAILS')}
                           </p>
                         </td>
                         <td className="px-4 py-3">
@@ -373,8 +390,8 @@ export default function PortfolioTable() {
                     <div className="grid grid-cols-2 gap-4 pt-1">
                       <div>
                         <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Thị giá</p>
-                        <p className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{formatCurrency(value, a.currency as Currency, true)}</p>
-                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Giá: {formatCurrency(a.currentPrice, a.currency as Currency)}</p>
+                        <p className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{maskValue(formatCurrency(value, a.currency as Currency, false), 'INVESTMENT_DETAILS')}</p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Giá: {maskValue(formatCurrency(a.currentPrice, a.currency as Currency), 'INVESTMENT_DETAILS')}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Lãi / Lỗ</p>
@@ -382,7 +399,7 @@ export default function PortfolioTable() {
                           {pnl >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%
                         </div>
                         <p className={`text-[10px] font-medium mt-0.5 ${pnl >= 0 ? 'text-emerald-500/70 dark:text-emerald-400/70' : 'text-rose-500/70 dark:text-rose-400/70'}`}>
-                          {pnl >= 0 ? '+' : ''}{formatCurrency(Math.abs(pnl), a.currency as Currency, true)}
+                          {pnl >= 0 ? '+' : ''}{maskValue(formatCurrency(Math.abs(pnl), a.currency as Currency, false), 'INVESTMENT_DETAILS')}
                         </p>
                       </div>
                     </div>

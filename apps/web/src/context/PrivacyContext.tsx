@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
-export type PrivacyCategory = 'NET_WORTH' | 'SAVINGS' | 'INVESTMENTS' | 'INCOME' | 'EXPENSE';
+export type PrivacyCategory = 'NET_WORTH' | 'SAVINGS' | 'SAVINGS_DETAILS' | 'INVESTMENTS' | 'INVESTMENT_DETAILS' | 'INCOME' | 'EXPENSE';
 
 interface PrivacyContextValue {
   privacySettings: Record<PrivacyCategory, boolean>;
@@ -15,7 +15,9 @@ interface PrivacyContextValue {
 const DEFAULT_SETTINGS: Record<PrivacyCategory, boolean> = {
   NET_WORTH: true,
   SAVINGS: true,
+  SAVINGS_DETAILS: true,
   INVESTMENTS: true,
+  INVESTMENT_DETAILS: true,
   INCOME: true,
   EXPENSE: false, // Defaultly visible
 };

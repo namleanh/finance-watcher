@@ -194,15 +194,15 @@ export default function GoalCards() {
                     />
                   </div>
                   <div className="flex justify-between text-xs text-slate-400">
-                    <span>{formatCurrency(goal.currentAmount, 'VND', true)}</span>
-                    <span>{formatCurrency(goal.targetAmount, 'VND', true)}</span>
+                    <span>{formatCurrency(goal.currentAmount, 'VND', false)}</span>
+                    <span>{formatCurrency(goal.targetAmount, 'VND', false)}</span>
                   </div>
                 </div>
 
                 <div className="mt-3 pt-3 border-t border-slate-700/50 flex justify-between text-xs text-slate-400">
                   <span>Hạn: {goal.deadline ? format(parseISO(goal.deadline), 'dd/MM/yyyy') : 'Không hạn'}</span>
                   <span style={{ color: goal.color }}>
-                    Cần thêm {formatCurrency(Math.max(0, goal.targetAmount - goal.currentAmount), 'VND', true)}
+                    Cần thêm {formatCurrency(Math.max(0, goal.targetAmount - goal.currentAmount), 'VND', false)}
                   </span>
                 </div>
               </div>

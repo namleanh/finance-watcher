@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { Trash2, Filter, Search, ChevronLeft, ChevronRight, CreditCard, Eye, EyeOff } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Trash2, Filter, Search, ChevronLeft, ChevronRight, CreditCard, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { useTransactions, useDeleteTransaction } from '@/hooks/api/useTransactions';
+import { useInfiniteTransactions, useDeleteTransaction } from '@/hooks/api/useTransactions';
 import { CATEGORIES } from '@/lib/constants';
 import { formatCurrency } from '@/lib/exchangeRate';
 import DeleteConfirmModal from '@/components/shared/DeleteConfirmModal';
@@ -32,17 +32,40 @@ export default function TransactionTable() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [page, setPage] = useState(1);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const { data: response, isLoading } = useTransactions({
-    page,
+  const { 
+    data, 
+    fetchNextPage, 
+    hasNextPage, 
+    isFetchingNextPage, 
+    isLoading 
+  } = useInfiniteTransactions({
     limit: 20,
     ...(filterType !== 'all' && { type: filterType }),
     ...(filterCat && { category: filterCat }),
     ...(dateFrom && { startDate: dateFrom }),
     ...(dateTo && { endDate: dateTo }),
   });
+
+  // Intersection Observer for Infinite Scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const { mutate: deleteTx, isPending: isDeleting } = useDeleteTransaction();
 
@@ -54,8 +77,11 @@ export default function TransactionTable() {
     }
   };
 
-  const transactions = response?.data || [];
-  const meta = response?.meta || { total: 0, totalPages: 1 };
+  const transactions = useMemo(() => {
+    return data?.pages.flatMap(page => page.data) || [];
+  }, [data]);
+
+  const totalTransactions = data?.pages[0]?.meta?.total || 0;
 
   // Local text search
   const filtered = useMemo(() => {
@@ -116,7 +142,7 @@ export default function TransactionTable() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-1 animate-in fade-in duration-200">
             <select
               value={filterType}
-              onChange={e => { setFilterType(e.target.value); setPage(1); }}
+              onChange={e => { setFilterType(e.target.value); }}
               className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="all">Tất cả loại</option>
@@ -127,7 +153,7 @@ export default function TransactionTable() {
             </select>
             <select
               value={filterCat}
-              onChange={e => { setFilterCat(e.target.value); setPage(1); }}
+              onChange={e => { setFilterCat(e.target.value); }}
               className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="">Tất cả danh mục</option>
@@ -136,14 +162,14 @@ export default function TransactionTable() {
             <input
               type="date"
               value={dateFrom}
-              onChange={e => { setDateFrom(e.target.value); setPage(1); }}
+              onChange={e => { setDateFrom(e.target.value); }}
               className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="Từ ngày"
             />
             <input
               type="date"
               value={dateTo}
-              onChange={e => { setDateTo(e.target.value); setPage(1); }}
+              onChange={e => { setDateTo(e.target.value); }}
               className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="Đến ngày"
             />
@@ -231,7 +257,7 @@ export default function TransactionTable() {
                         {t.type === 'EXPENSE' ? '-' : '+'}{maskValue(formatCurrency(t.originalAmount, t.originalCurrency, false), (t.type === 'INVESTMENT' ? 'INVESTMENTS' : t.type === 'SAVING' ? 'SAVINGS' : t.type) as PrivacyCategory)}
                       </span>
                       {t.originalCurrency !== 'VND' && (
-                        <p className="text-[10px] text-slate-500">{maskValue(formatCurrency(t.amount, 'VND', true), (t.type === 'INVESTMENT' ? 'INVESTMENTS' : t.type === 'SAVING' ? 'SAVINGS' : t.type) as PrivacyCategory)}</p>
+                        <p className="text-[10px] text-slate-500">{maskValue(formatCurrency(t.amount, 'VND', false), (t.type === 'INVESTMENT' ? 'INVESTMENTS' : t.type === 'SAVING' ? 'SAVINGS' : t.type) as PrivacyCategory)}</p>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -289,28 +315,19 @@ export default function TransactionTable() {
             ))}
           </div>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-slate-700/30 bg-slate-50/50 dark:bg-slate-800/20">
-            <div className="text-[10px] sm:text-xs text-slate-500">
-              {meta.total} GD | {page}/{meta.totalPages}
+            {/* Sentinel for Infinite Scroll */}
+            <div ref={loadMoreRef} className="py-6 flex justify-center items-center h-20">
+              {isFetchingNextPage ? (
+                <div className="flex items-center gap-2 text-indigo-500 font-medium">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="text-xs">Đang tải thêm...</span>
+                </div>
+              ) : hasNextPage ? (
+                <span className="text-[10px] text-slate-400">Cuộn để xem thêm</span>
+              ) : transactions.length > 0 ? (
+                <span className="text-[10px] text-slate-400">Đã hiển thị tất cả {totalTransactions} giao dịch</span>
+              ) : null}
             </div>
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-600 text-slate-500 disabled:opacity-50 hover:bg-slate-100 dark:hover:bg-slate-700"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <button
-                onClick={() => setPage(p => Math.min(meta.totalPages, p + 1))}
-                disabled={page >= meta.totalPages}
-                className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-600 text-slate-500 disabled:opacity-50 hover:bg-slate-100 dark:hover:bg-slate-700"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
-          </div>
         </>
       )}
 

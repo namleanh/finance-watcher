@@ -42,7 +42,7 @@ export default function Header({ title, subtitle }: HeaderProps) {
         <div className="hidden sm:flex flex-col items-end">
           <span className="text-xs text-slate-500 dark:text-slate-400">Tổng tài sản ước tính</span>
           <span className="text-lg font-bold text-emerald-500 dark:text-emerald-400">
-            {maskValue(formatCurrency(netWorth, 'VND', true), 'NET_WORTH')}
+            {maskValue(formatCurrency(netWorth, 'VND', false), 'NET_WORTH')}
           </span>
         </div>
 

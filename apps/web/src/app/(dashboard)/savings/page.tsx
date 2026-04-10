@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Trash2, Banknote, TrendingUp, Clock, X, Landmark } from 'lucide-react';
+import { Plus, Trash2, Banknote, TrendingUp, Clock, X, Landmark, Eye, EyeOff, PiggyBank } from 'lucide-react';
 import { useSavingsDeposits, useCreateSavingsDeposit, useDeleteSavingsDeposit, SavingsDeposit } from '@/hooks/api/useSavingsDeposits';
 import { useWallets } from '@/hooks/api/useWallets';
 import { formatCurrency } from '@/lib/exchangeRate';
@@ -13,6 +13,7 @@ import DeleteConfirmModal from '@/components/shared/DeleteConfirmModal';
 import CurrencyInput from '@/components/shared/CurrencyInput';
 import { Currency } from '@/lib/types';
 import { usePrivacy } from '@/context/PrivacyContext';
+import { StatCard } from '@/components/shared/StatCard';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 const TERM_OPTIONS = [
@@ -148,7 +149,7 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
                 <option value="">-- Chọn ví --</option>
                 {wallets.map(w => (
                   <option key={w.id} value={w.id}>
-                    {w.name} ({formatCurrency(w.balance, w.currency as Currency, true)})
+                    {w.name} ({formatCurrency(w.balance, w.currency as Currency, false)})
                   </option>
                 ))}
               </select>
@@ -240,7 +241,7 @@ export default function SavingsDepositsPage() {
   const { toVND } = useCurrencyConverter();
   const [showModal, setShowModal] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const { maskValue } = usePrivacy();
+  const { maskValue, isCategoryHidden, toggleCategory } = usePrivacy();
 
   const totalDeposited = deposits
     .filter(d => d.status === 'ACTIVE')
@@ -255,37 +256,49 @@ export default function SavingsDepositsPage() {
       <Header title="Tiết kiệm" subtitle="Quản lý các sổ tiết kiệm có kỳ hạn" />
 
       <div className="flex-1 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 overflow-auto">
-        {/* Summary */}
+        {/* Summary Row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[
-            { label: 'Tổng đang gửi', value: totalDeposited, icon: Banknote, color: 'from-indigo-500 to-violet-600', iconBg: 'bg-white/20' },
-            { label: 'Tiền lãi dự kiến', value: totalInterest, icon: TrendingUp, color: 'from-emerald-500 to-teal-600', iconBg: 'bg-white/20' },
-            { label: 'Số sổ hoạt động', value: deposits.filter(d => d.status === 'ACTIVE').length, icon: Clock, color: 'from-amber-500 to-orange-600', iconBg: 'bg-white/20', isCount: true },
-          ].map(({ label, value, icon: Icon, color, iconBg, isCount }) => (
-            <div key={label} className={`rounded-2xl bg-gradient-to-br ${color} p-5 text-white shadow-lg`}>
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm opacity-90">{label}</p>
-                <div className={`w-9 h-9 rounded-xl ${iconBg} flex items-center justify-center`}>
-                  <Icon size={18} />
-                </div>
-              </div>
-              <p className="text-2xl font-bold">
-                {isCount ? `${value} sổ` : maskValue(formatCurrency(value as number, 'VND', true), 'SAVINGS')}
-              </p>
-            </div>
-          ))}
+          <StatCard
+            title="Tổng đang gửi"
+            value={formatCurrency(totalDeposited, 'VND', false)}
+            icon={<Banknote size={20} />}
+            gradient="bg-gradient-to-br from-indigo-500 to-violet-600"
+            privacyCategory="SAVINGS"
+          />
+          <StatCard
+            title="Tiền lãi dự kiến"
+            value={formatCurrency(totalInterest, 'VND', false)}
+            icon={<TrendingUp size={20} />}
+            gradient="bg-gradient-to-br from-emerald-500 to-teal-600"
+            privacyCategory="SAVINGS"
+          />
+          <StatCard
+            title="Số sổ hoạt động"
+            value={`${deposits.filter(d => d.status === 'ACTIVE').length} sổ`}
+            icon={<Clock size={20} />}
+            gradient="bg-gradient-to-br from-amber-500 to-orange-600"
+          />
         </div>
 
         {/* Table header */}
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900 dark:text-white">Danh sách sổ tiết kiệm</h2>
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors shadow-sm"
-          >
-            <Plus size={16} />
-            Thêm sổ
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => toggleCategory('SAVINGS_DETAILS')}
+              className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:text-indigo-500 transition-colors"
+              title={isCategoryHidden('SAVINGS_DETAILS') ? 'Hiện chi tiết' : 'Ẩn chi tiết'}
+            >
+              {isCategoryHidden('SAVINGS_DETAILS') ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors shadow-sm"
+            >
+              <Plus size={16} />
+              Thêm sổ
+            </button>
+          </div>
         </div>
 
         {/* Table */}
@@ -343,7 +356,7 @@ export default function SavingsDepositsPage() {
                             </div>
                           </td>
                           <td className="px-4 py-4 text-right whitespace-nowrap">
-                            <span className="text-sm font-semibold text-slate-900 dark:text-white">{formatCurrency(d.depositAmount, d.currency as Currency, true)}</span>
+                            <span className="text-sm font-semibold text-slate-900 dark:text-white">{maskValue(formatCurrency(d.depositAmount, d.currency as Currency, false), 'SAVINGS_DETAILS')}</span>
                           </td>
                           <td className="px-4 py-4 text-center text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
                             {format(parseISO(d.depositDate), 'dd/MM/yyyy', { locale: vi })}
@@ -363,7 +376,7 @@ export default function SavingsDepositsPage() {
                           </td>
                           <td className="px-3 py-4 text-right whitespace-nowrap">
                             <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                              +{formatCurrency(d.interestEarned, d.currency as Currency, true)}
+                              +{maskValue(formatCurrency(d.interestEarned, d.currency as Currency, false), 'SAVINGS_DETAILS')}
                             </span>
                           </td>
                           <td className="px-5 py-4 text-center">
@@ -418,11 +431,11 @@ export default function SavingsDepositsPage() {
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3">
                           <p className="text-slate-400 mb-1">Số tiền gửi</p>
-                          <p className="font-bold text-sm text-slate-900 dark:text-white">{formatCurrency(d.depositAmount, d.currency as Currency, true)}</p>
+                          <p className="font-bold text-sm text-slate-900 dark:text-white">{maskValue(formatCurrency(d.depositAmount, d.currency as Currency, false), 'SAVINGS_DETAILS')}</p>
                         </div>
                         <div className="bg-emerald-50 dark:bg-emerald-500/10 rounded-xl p-3">
                           <p className="text-slate-400 mb-1">Tiền lãi</p>
-                          <p className="font-bold text-sm text-emerald-600 dark:text-emerald-400">+{formatCurrency(d.interestEarned, d.currency as Currency, true)}</p>
+                          <p className="font-bold text-sm text-emerald-600 dark:text-emerald-400">+{maskValue(formatCurrency(d.interestEarned, d.currency as Currency, false), 'SAVINGS_DETAILS')}</p>
                         </div>
                         <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3">
                           <p className="text-slate-400 mb-1">Kỳ hạn / Lãi suất</p>

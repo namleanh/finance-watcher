@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Trash2, Wallet, Building2, Smartphone, CreditCard, Coins, Edit2 } from 'lucide-react';
+import { Plus, Trash2, Wallet, Building2, Smartphone, CreditCard, Coins, Edit2, Eye, EyeOff } from 'lucide-react';
 import { useWallets, useCreateWallet, useDeleteWallet, useUpdateWallet, Wallet as WalletType } from '@/hooks/api/useWallets';
 import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
@@ -214,7 +214,7 @@ export default function WalletsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editWallet, setEditWallet] = useState<WalletType | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const { maskValue } = usePrivacy();
+  const { maskValue, isCategoryHidden, toggleCategory } = usePrivacy();
 
   const totalBalance = wallets.reduce((s, w) => s + toVND(w.balance, w.currency as Currency), 0);
 
@@ -232,7 +232,16 @@ export default function WalletsPage() {
         {/* Summary Card */}
         <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-700 p-6 text-white shadow-xl shadow-indigo-500/20">
           <p className="text-sm text-indigo-200 mb-1">Tổng số dư tất cả ví</p>
-          <p className="text-3xl font-bold">{maskValue(formatCurrency(totalBalance, 'VND', true), 'NET_WORTH')}</p>
+          <div className="flex items-center gap-3">
+            <p className="text-3xl font-bold">{maskValue(formatCurrency(totalBalance, 'VND', false), 'NET_WORTH')}</p>
+            <button
+              onClick={() => toggleCategory('NET_WORTH')}
+              className="p-1.5 rounded-lg text-white/50 hover:text-white transition-colors"
+              title={isCategoryHidden('NET_WORTH') ? 'Hiện số dư' : 'Ẩn số dư'}
+            >
+              {isCategoryHidden('NET_WORTH') ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
           <p className="text-sm text-indigo-200 mt-2">{wallets.length} ví đang hoạt động</p>
         </div>
 
@@ -307,7 +316,7 @@ export default function WalletsPage() {
 
                   <div className="mt-4">
                     <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                      {maskValue(formatCurrency(wallet.balance, wallet.currency as Currency, true), 'NET_WORTH')}
+                      {maskValue(formatCurrency(wallet.balance, wallet.currency as Currency, false), 'NET_WORTH')}
                     </p>
                     {wallet.currency !== 'VND' && (
                       <p className="text-[11px] font-medium text-indigo-500 mt-0.5">

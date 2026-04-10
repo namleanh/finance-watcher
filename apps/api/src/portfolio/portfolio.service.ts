@@ -42,6 +42,7 @@ export class PortfolioService {
     const units = dto.units;
     const totalCost = BigInt(Math.round(Number(units) * Number(costBasis)));
     const purchaseDate = dto.purchaseDate ? new Date(dto.purchaseDate) : new Date();
+    const rates = await this.getMarketRates();
 
     return this.prisma.$transaction(async (tx) => {
       let transactionId: string | undefined;
@@ -61,7 +62,7 @@ export class PortfolioService {
         if (assetCurrency === walletCurrency) {
           balanceChange = totalCost;
         } else {
-          const converted = convertCurrency(Number(totalCost), assetCurrency, walletCurrency);
+          const converted = convertCurrency(Number(totalCost), assetCurrency, walletCurrency, rates);
           balanceChange = BigInt(Math.round(converted));
         }
 
@@ -76,7 +77,7 @@ export class PortfolioService {
         });
 
         // Create audit transaction (amount is standard VND)
-        const amountInVND = BigInt(Math.round(convertCurrency(Number(totalCost), assetCurrency, 'VND')));
+        const amountInVND = BigInt(Math.round(convertCurrency(Number(totalCost), assetCurrency, 'VND', rates)));
 
         const transaction = await tx.transaction.create({
           data: {
@@ -144,6 +145,8 @@ export class PortfolioService {
     if (!asset) throw new NotFoundException('Asset not found');
     if (asset.userId !== userId) throw new ForbiddenException();
 
+    const rates = await this.getMarketRates();
+
     return this.prisma.$transaction(async (tx) => {
       // If linked to a wallet, refund the cost basis
       if (asset.walletId) {
@@ -157,7 +160,7 @@ export class PortfolioService {
         if (assetCurrency === walletCurrency) {
           refundAmount = BigInt(Math.round(totalCostInAssetCurrency));
         } else {
-          const converted = convertCurrency(totalCostInAssetCurrency, assetCurrency, walletCurrency);
+          const converted = convertCurrency(totalCostInAssetCurrency, assetCurrency, walletCurrency, rates);
           refundAmount = BigInt(Math.round(converted));
         }
 

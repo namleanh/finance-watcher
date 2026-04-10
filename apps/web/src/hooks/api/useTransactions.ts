@@ -1,5 +1,15 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/apiClient';
+
+export interface TransactionParams {
+  page?: number;
+  limit?: number;
+  type?: string;
+  category?: string;
+  walletId?: string;
+  startDate?: string;
+  endDate?: string;
+}
 
 export interface Transaction {
   id: string;
@@ -25,21 +35,32 @@ export interface Transaction {
   currentPrice?: number;
 }
 
-export const useTransactions = (params?: {
-  page?: number;
-  limit?: number;
-  type?: string;
-  category?: string;
-  walletId?: string;
-  startDate?: string;
-  endDate?: string;
-}) => {
+export const useTransactions = (params?: TransactionParams) => {
   return useQuery({
     queryKey: ['transactions', params],
     queryFn: async () => {
       const { data } = await apiClient.get('/transactions', { params });
       return data; // { data: Transaction[], meta: { total, page, limit, totalPages } }
     },
+  });
+};
+
+export const useInfiniteTransactions = (params?: Omit<TransactionParams, 'page'>) => {
+  return useInfiniteQuery({
+    queryKey: ['transactions', 'infinite', params],
+    queryFn: async ({ pageParam = 1 }) => {
+      const { data } = await apiClient.get('/transactions', { 
+        params: { ...params, page: pageParam } 
+      });
+      return data;
+    },
+    getNextPageParam: (lastPage: any) => {
+      if (lastPage.meta.page < lastPage.meta.totalPages) {
+        return lastPage.meta.page + 1;
+      }
+      return undefined;
+    },
+    initialPageParam: 1,
   });
 };
 
