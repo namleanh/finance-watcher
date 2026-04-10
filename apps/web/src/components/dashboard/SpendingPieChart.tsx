@@ -38,7 +38,7 @@ export default function SpendingPieChart() {
         <select
           value={month}
           onChange={e => setMonth(Number(e.target.value))}
-          className="text-xs bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="text-xs bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg px-2 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           {monthNames.map((m, i) => <option key={i} value={i}>{m}</option>)}
         </select>

@@ -167,13 +167,13 @@ export default function AddTransactionModal({ open, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm touch-none" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl flex flex-col overscroll-contain max-h-[90vh]">
+      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl flex flex-col overscroll-contain max-h-[90dvh]">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-2">
             <Plus size={18} className="text-indigo-500" />
             <h2 className="font-semibold text-slate-900 dark:text-white">Thêm giao dịch</h2>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"><X size={20} /></button>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors p-2"><X size={20} /></button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto no-scrollbar max-h-[85vh] touch-pan-y">
@@ -184,7 +184,7 @@ export default function AddTransactionModal({ open, onClose }: Props) {
               {TYPE_OPTIONS.map(opt => (
                 <button
                   key={opt.value} type="button" onClick={() => setType(opt.value)}
-                  className={`py-2 px-1 rounded-xl text-[10px] font-bold transition-all ${type === opt.value ? `bg-gradient-to-r ${opt.color} text-white shadow-md shadow-indigo-500/20` : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:border-indigo-400 transition-colors'}`}
+                  className={`py-3 px-1 rounded-xl text-[10px] font-bold transition-all ${type === opt.value ? `bg-gradient-to-r ${opt.color} text-white shadow-md shadow-indigo-500/20` : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:border-indigo-400 transition-colors'}`}
                 >
                   {opt.label}
                 </button>
@@ -226,7 +226,7 @@ export default function AddTransactionModal({ open, onClose }: Props) {
                   setAmount('');
                   setCurrentPrice('');
                 }} 
-                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all"
+              className="w-full block bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all" 
               >
                 {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
               </select>

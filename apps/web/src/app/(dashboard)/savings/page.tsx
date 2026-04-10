@@ -252,7 +252,7 @@ export default function SavingsDepositsPage() {
     <div className="flex flex-col h-full">
       <Header title="Tiết kiệm" subtitle="Quản lý các sổ tiết kiệm có kỳ hạn" />
 
-      <div className="flex-1 p-4 sm:p-6 space-y-6 overflow-auto">
+      <div className="flex-1 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 overflow-auto">
         {/* Summary */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
@@ -279,7 +279,7 @@ export default function SavingsDepositsPage() {
           <h2 className="text-base font-semibold text-slate-900 dark:text-white">Danh sách sổ tiết kiệm</h2>
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors shadow-sm"
+            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors shadow-sm"
           >
             <Plus size={16} />
             Thêm sổ
@@ -409,8 +409,8 @@ export default function SavingsDepositsPage() {
                             <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${className}`}>{label}</span>
                           </div>
                         </div>
-                        <button onClick={() => setDeleteId(d.id)} className="p-1.5 text-slate-400 hover:text-rose-500 transition-colors">
-                          <Trash2 size={14} />
+                        <button onClick={() => setDeleteId(d.id)} className="p-2.5 text-slate-400 hover:text-rose-500 transition-colors">
+                          <Trash2 size={16} />
                         </button>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-xs">

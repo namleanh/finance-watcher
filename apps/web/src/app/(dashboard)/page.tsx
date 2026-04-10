@@ -18,7 +18,7 @@ export default function DashboardPage() {
       <Header title="Dashboard" subtitle="Tổng quan tài chính của bạn" />
       <MarketDataWidget />
 
-      <div className="p-4 sm:p-6 space-y-8">
+      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-8">
         <OverviewCards />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

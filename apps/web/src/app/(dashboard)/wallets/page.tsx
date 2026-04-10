@@ -226,7 +226,7 @@ export default function WalletsPage() {
     <div className="flex flex-col h-full">
       <Header title="Ví tiền" subtitle="Quản lý các tài khoản và ví của bạn" />
 
-      <div className="flex-1 p-4 sm:p-6 space-y-6 overflow-auto">
+      <div className="flex-1 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 overflow-auto">
         {/* Summary Card */}
         <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-700 p-6 text-white shadow-xl shadow-indigo-500/20">
           <p className="text-sm text-indigo-200 mb-1">Tổng số dư tất cả ví</p>
@@ -239,7 +239,7 @@ export default function WalletsPage() {
           <h2 className="text-base font-semibold text-slate-900 dark:text-white">Danh sách ví</h2>
           <button
             onClick={() => { setEditWallet(null); setShowModal(true); }}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors shadow-sm"
+            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors shadow-sm"
           >
             <Plus size={16} />
             Thêm ví
@@ -288,17 +288,17 @@ export default function WalletsPage() {
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => { setEditWallet(wallet); setShowModal(true); }}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
+                        className="p-2.5 rounded-lg text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
                         title="Sửa ví"
                       >
-                        <Edit2 size={14} />
+                        <Edit2 size={16} />
                       </button>
                       <button
                         onClick={() => setDeleteId(wallet.id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                        className="p-2.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
                         title="Xóa ví"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   </div>

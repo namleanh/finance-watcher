@@ -36,7 +36,7 @@ export default function NetWorthLineChart() {
         <select
           value={year}
           onChange={e => setYear(Number(e.target.value))}
-          className="text-xs bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="text-xs bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg px-2 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           {years.map(y => <option key={y} value={y}>{y}</option>)}
         </select>

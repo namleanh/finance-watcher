@@ -59,7 +59,7 @@ export default function LoginPage() {
   const isUnverifiedError = errorMessage === 'Vui lòng xác thực email trước khi đăng nhập';
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-slate-50 dark:bg-slate-950">
       <div className="max-w-md w-full p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800">
         <div className="text-center mb-8">
           <h1 className="text-3xl flex items-center justify-center font-bold text-indigo-600 dark:text-indigo-400 gap-2">

@@ -39,7 +39,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!mounted || isAuthLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="flex h-[100dvh] w-full items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
@@ -50,12 +50,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
+    <div className="flex h-[100dvh] overflow-hidden bg-slate-50 dark:bg-slate-950">
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Top Bar */}
-        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 shrink-0">
+        <header className="md:hidden flex items-center justify-between px-4 sm:px-6 py-3 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
               <Wallet size={16} className="text-white" />
