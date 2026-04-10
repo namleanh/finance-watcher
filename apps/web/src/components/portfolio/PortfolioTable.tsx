@@ -94,7 +94,7 @@ function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () 
             <X size={20} />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-3 overflow-y-auto no-scrollbar touch-pan-y">
+        <form onSubmit={handleSubmit} className="p-6 space-y-3 overflow-y-auto no-scrollbar touch-pan-y">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Tên tài sản</label>
@@ -106,20 +106,22 @@ function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () 
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="relative p-0.5">
+            <div>
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Số lượng</label>
-              <CurrencyInput value={units} onChange={e => { setUnits(e.target.value); setLastField('units'); }} required placeholder="100" className="w-full bg-white border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all" />
-              {isInsufficient && !editing && lastField === 'units' && (
-                <div className="absolute top-0 right-0 -translate-y-1/2 z-20 animate-bounce">
-                  <div className="bg-rose-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-lg rotate-2 flex items-center gap-1 whitespace-nowrap">
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
-                    </span>
-                    Số dư không đủ
+              <div className="relative p-0.5">
+                <CurrencyInput value={units} onChange={e => { setUnits(e.target.value); setLastField('units'); }} required placeholder="100" className="w-full bg-white border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all" />
+                {isInsufficient && !editing && lastField === 'units' && (
+                  <div className="absolute top-0 right-2 -translate-y-1/2 z-20 animate-bounce pointer-events-none">
+                    <div className="bg-rose-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-lg rotate-2 flex items-center gap-1 whitespace-nowrap">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
+                      </span>
+                      Số dư không đủ
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
             <div>
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Tiền tệ</label>
@@ -141,7 +143,7 @@ function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () 
                 className={`w-full bg-white border ${isInsufficient && !editing ? 'border-rose-300 dark:border-rose-500/30' : 'border-slate-200 dark:border-slate-700'} text-slate-900 dark:bg-slate-800 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all`}
               />
               {isInsufficient && !editing && lastField === 'costBasis' && (
-                <div className="absolute top-0 right-0 -translate-y-1/2 z-20 animate-bounce">
+                <div className="absolute top-0 right-2 -translate-y-1/2 z-20 animate-bounce pointer-events-none">
                   <div className="bg-rose-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-lg -rotate-2 flex items-center gap-1 whitespace-nowrap">
                     <span className="relative flex h-1.5 w-1.5">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>

@@ -165,9 +165,9 @@ export default function AddTransactionModal({ open, onClose }: Props) {
   const isPending = isTxPending;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm touch-none" onClick={onClose} />
-      <div className="relative w-full h-full sm:h-auto sm:max-w-md bg-white dark:bg-slate-900 sm:rounded-2xl shadow-2xl flex flex-col overscroll-contain">
+      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl flex flex-col overscroll-contain max-h-[90vh]">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-2">
             <Plus size={18} className="text-indigo-500" />
@@ -206,7 +206,7 @@ export default function AddTransactionModal({ open, onClose }: Props) {
                 className={`w-full bg-white dark:bg-slate-800 border ${isInsufficient ? 'border-rose-300 dark:border-rose-500/30' : 'border-slate-200 dark:border-slate-700'} rounded-xl px-4 py-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all`}
               />
               {isInsufficient && (
-                <div className="absolute top-0 right-0 -translate-y-1/2 z-10 animate-bounce">
+                <div className="absolute top-0 right-2 -translate-y-1/2 z-10 animate-bounce pointer-events-none">
                   <div className="bg-rose-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-lg rotate-2 flex items-center gap-1 whitespace-nowrap">
                     <span className="relative flex h-1.5 w-1.5">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
