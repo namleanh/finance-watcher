@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePortfolioAssetDto, UpdatePortfolioAssetDto } from './dto/portfolio.dto';
 import { decryptField } from '../utils/crypto.util';
+import { convertCurrency } from '../utils/exchange.util';
 
 @Injectable()
 export class PortfolioService {
@@ -51,25 +52,40 @@ export class PortfolioService {
         if (!wallet || wallet.userId !== userId) {
           throw new ForbiddenException('Wallet not found or access denied');
         }
-        if (wallet.balance < totalCost) {
-          throw new BadRequestException('Số dư ví không đủ để mua tài sản này');
+
+        // Determine balance change in wallet's currency
+        const assetCurrency = dto.currency || 'VND';
+        const walletCurrency = wallet.currency || 'VND';
+        
+        let balanceChange: bigint;
+        if (assetCurrency === walletCurrency) {
+          balanceChange = totalCost;
+        } else {
+          const converted = convertCurrency(Number(totalCost), assetCurrency, walletCurrency);
+          balanceChange = BigInt(Math.round(converted));
+        }
+
+        if (wallet.balance < balanceChange) {
+          throw new BadRequestException(`Số dư ví không đủ (Cần: ${Number(balanceChange).toLocaleString('en-US')} ${walletCurrency})`);
         }
 
         // Deduct from wallet
         await tx.wallet.update({
           where: { id: dto.walletId },
-          data: { balance: { decrement: totalCost } },
+          data: { balance: { decrement: balanceChange } },
         });
 
-        // Create audit transaction
+        // Create audit transaction (amount is standard VND)
+        const amountInVND = BigInt(Math.round(convertCurrency(Number(totalCost), assetCurrency, 'VND')));
+
         const transaction = await tx.transaction.create({
           data: {
             userId,
             walletId: dto.walletId,
             type: 'INVESTMENT',
-            amount: totalCost,
-            originalAmount: totalCost,
-            originalCurrency: wallet.currency || 'VND',
+            amount: amountInVND,
+            originalAmount: Number(totalCost),
+            originalCurrency: assetCurrency,
             category: 'Đầu tư',
             date: purchaseDate,
             notes: `Mua tài sản: ${dto.name} (${dto.units} đơn vị)`,
@@ -131,7 +147,20 @@ export class PortfolioService {
     return this.prisma.$transaction(async (tx) => {
       // If linked to a wallet, refund the cost basis
       if (asset.walletId) {
-        const refundAmount = BigInt(Math.round(Number(asset.units) * Number(asset.costBasis)));
+        const assetCurrency = asset.currency || 'VND';
+        const wallet = await tx.wallet.findUnique({ where: { id: asset.walletId } });
+        const walletCurrency = wallet?.currency || 'VND';
+
+        const totalCostInAssetCurrency = Number(asset.units) * Number(asset.costBasis);
+        
+        let refundAmount: bigint;
+        if (assetCurrency === walletCurrency) {
+          refundAmount = BigInt(Math.round(totalCostInAssetCurrency));
+        } else {
+          const converted = convertCurrency(totalCostInAssetCurrency, assetCurrency, walletCurrency);
+          refundAmount = BigInt(Math.round(converted));
+        }
+
         await tx.wallet.update({
           where: { id: asset.walletId },
           data: { balance: { increment: refundAmount } },

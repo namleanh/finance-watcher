@@ -59,30 +59,30 @@ function GoalModal({ open, onClose, editing }: { open: boolean; onClose: () => v
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Tên mục tiêu</label>
-            <input value={name} onChange={e => setName(e.target.value)} required placeholder="VD: Mua nhà 2027" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
+            <input value={name} onChange={e => setName(e.target.value)} required placeholder="VD: Mua nhà 2027" className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Mục tiêu (₫)</label>
-              <CurrencyInput value={targetAmount} onChange={(e: any) => setTargetAmount(e.target.value)} required placeholder="1000000000" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
+              <CurrencyInput value={targetAmount} onChange={(e: any) => setTargetAmount(e.target.value)} required placeholder="1000000000" className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all" />
             </div>
             {editing && (
               <div>
                 <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Đã tiết kiệm (₫)</label>
-                <CurrencyInput value={currentAmount} onChange={(e: any) => setCurrentAmount(e.target.value)} placeholder="0" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
+                <CurrencyInput value={currentAmount} onChange={(e: any) => setCurrentAmount(e.target.value)} placeholder="0" className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all" />
               </div>
             )}
           </div>
           <div>
-            <label className="text-xs text-slate-400 block mb-1">Hạn chót</label>
-            <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} className="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Hạn chót</label>
+            <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all" />
           </div>
           <div>
             <label className="text-xs text-slate-400 block mb-2">Icon</label>
             <div className="flex flex-wrap gap-2">
               {GOAL_ICONS.map(ic => (
                 <button key={ic} type="button" onClick={() => setIcon(ic)}
-                  className={`w-9 h-9 rounded-xl text-lg flex items-center justify-center transition-all ${icon === ic ? 'ring-2 ring-indigo-500 bg-slate-700' : 'bg-slate-800 hover:bg-slate-700'}`}>
+                  className={`w-9 h-9 rounded-xl text-lg flex items-center justify-center transition-all ${icon === ic ? 'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-slate-700 shadow-sm' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors'}`}>
                   {ic}
                 </button>
               ))}
@@ -93,7 +93,7 @@ function GoalModal({ open, onClose, editing }: { open: boolean; onClose: () => v
             <div className="flex flex-wrap gap-2">
               {GOAL_COLORS.map(c => (
                 <button key={c} type="button" onClick={() => setColor(c)}
-                  className={`w-7 h-7 rounded-full transition-all ${color === c ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110' : ''}`}
+                  className={`w-7 h-7 rounded-full transition-all ${color === c ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-white dark:ring-offset-slate-900 scale-110' : ''}`}
                   style={{ backgroundColor: c }} />
               ))}
             </div>
@@ -158,7 +158,7 @@ export default function GoalCards() {
             const progress = getGoalProgress(goal);
             const daysLeft = goal.deadline ? differenceInDays(parseISO(goal.deadline), new Date()) : 0;
             return (
-              <div key={goal.id} className="rounded-2xl bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 p-5 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-all group">
+              <div key={goal.id} className="rounded-2xl bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 p-5 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 transition-all group">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl border border-slate-100 dark:border-transparent" style={{ backgroundColor: `${goal.color}20` }}>

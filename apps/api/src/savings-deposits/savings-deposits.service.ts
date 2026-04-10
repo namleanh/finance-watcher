@@ -39,7 +39,29 @@ export class SavingsDepositsService {
     maturityDate.setMonth(maturityDate.getMonth() + dto.termMonths);
 
     return this.prisma.$transaction(async (tx) => {
-      // 1. Create the Savings Deposit first
+      let walletCurrency = 'VND';
+
+      // 1. If walletId provided, handle balance and determine currency
+      if (dto.walletId) {
+        const wallet = await tx.wallet.findUnique({ where: { id: dto.walletId } });
+        if (!wallet || wallet.userId !== userId) {
+          throw new ForbiddenException('Wallet not found or access denied');
+        }
+        if (wallet.balance < depositAmount) {
+          throw new BadRequestException('Số dư ví không đủ để thực hiện khoản tiết kiệm này');
+        }
+        walletCurrency = wallet.currency || 'VND';
+
+        // Deduct from wallet
+        await tx.wallet.update({
+          where: { id: dto.walletId },
+          data: { balance: { decrement: depositAmount } },
+        });
+
+        // The audit transaction will be created after the deposit is created
+      }
+
+      // 2. Create the Savings Deposit
       const deposit = await tx.savingsDeposit.create({
         data: {
           userId,
@@ -50,28 +72,14 @@ export class SavingsDepositsService {
           interestRate: dto.interestRate,
           depositDate,
           maturityDate,
+          currency: walletCurrency,
           notes: dto.notes,
           walletId: dto.walletId,
         },
       });
 
-      // 2. If walletId provided, handle balance and create audit transaction
+      // 3. Create audit transaction linked to the new deposit
       if (dto.walletId) {
-        const wallet = await tx.wallet.findUnique({ where: { id: dto.walletId } });
-        if (!wallet || wallet.userId !== userId) {
-          throw new ForbiddenException('Wallet not found or access denied');
-        }
-        if (wallet.balance < depositAmount) {
-          throw new BadRequestException('Số dư ví không đủ để thực hiện khoản tiết kiệm này');
-        }
-
-        // Deduct from wallet
-        await tx.wallet.update({
-          where: { id: dto.walletId },
-          data: { balance: { decrement: depositAmount } },
-        });
-
-        // Create audit transaction linked to the new deposit
         await tx.transaction.create({
           data: {
             userId,
@@ -79,7 +87,7 @@ export class SavingsDepositsService {
             type: 'SAVING',
             amount: depositAmount,
             originalAmount: depositAmount,
-            originalCurrency: wallet.currency || 'VND',
+            originalCurrency: walletCurrency,
             category: encryptField('Tiết kiệm', userId) || 'Tiết kiệm',
             date: depositDate,
             notes: encryptField(`Gửi tiết kiệm: ${dto.bankName}`, userId) || `Gửi tiết kiệm: ${dto.bankName}`,
@@ -155,7 +163,9 @@ export class SavingsDepositsService {
       depositAmount,
       interestRate,
       interestEarned,
+      currency: d.currency || 'VND',
       walletName: d.wallet ? decryptField(d.wallet.name, d.userId) : null,
+      walletCurrency: d.wallet?.currency || 'VND',
       transactionIds: d.transactions ? d.transactions.map((t: any) => t.id) : [],
     };
   }

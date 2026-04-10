@@ -13,8 +13,9 @@ import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () => void; editing?: PortfolioAsset }) {
-  const { mutateAsync: createAsset } = useCreatePortfolioAsset();
-  const { mutateAsync: updateAsset } = useUpdatePortfolioAsset();
+  const { mutateAsync: createAsset, isPending: isCreating } = useCreatePortfolioAsset();
+  const { mutateAsync: updateAsset, isPending: isUpdating } = useUpdatePortfolioAsset();
+  const isPending = isCreating || isUpdating;
   const { toVND } = useCurrencyConverter();
   useBodyScrollLock(open);
 
@@ -28,12 +29,30 @@ function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () 
   const [costBasis, setCostBasis] = useState(editing?.costBasis.toString() ?? '');
   const [currentPrice, setCurrentPrice] = useState(editing?.currentPrice.toString() ?? '');
   const [currency, setCurrency] = useState<Currency>((editing?.currency as Currency) ?? 'VND');
+  const [lastField, setLastField] = useState<'units' | 'costBasis'>('costBasis');
   const [purchaseDate, setPurchaseDate] = useState(initDate);
   const [assetType, setAssetType] = useState<'STOCK' | 'CRYPTO' | 'GOLD' | 'REAL_ESTATE' | 'OTHER'>(editing?.assetType ?? 'STOCK');
   const [notes, setNotes] = useState(editing?.notes ?? '');
   const [walletId, setWalletId] = useState(editing?.walletId ?? '');
-
   const { data: wallets = [] } = useWallets();
+  
+  const totalCost = (parseFloat(units) || 0) * (parseFloat(costBasis) || 0);
+  const selectedWallet = wallets.find(w => w.id === walletId);
+  const isInsufficient = selectedWallet && totalCost > selectedWallet.balance;
+
+  // Filter wallets by selected currency
+  const compatibleWallets = wallets.filter(w => w.currency === currency);
+
+  // Auto-select logic when currency changes
+  React.useEffect(() => {
+    if (!editing && compatibleWallets.length > 0) {
+      if (!walletId || !compatibleWallets.find(w => w.id === walletId)) {
+        setWalletId(compatibleWallets[0].id);
+      }
+    } else if (compatibleWallets.length === 0) {
+      setWalletId('');
+    }
+  }, [currency, compatibleWallets, walletId, editing]);
 
   if (!open) return null;
 
@@ -70,40 +89,64 @@ function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () 
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-6 animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
         <h2 className="font-semibold text-slate-900 dark:text-white mb-4 shrink-0">{editing ? 'Cập nhật tài sản' : 'Thêm tài sản đầu tư'}</h2>
-        <form onSubmit={handleSubmit} className="space-y-3 overflow-y-auto">
-          <div className="grid grid-cols-2 gap-3">
+        <form onSubmit={handleSubmit} className="space-y-3 overflow-y-auto no-scrollbar">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Tên tài sản</label>
-              <input value={name} onChange={e => setName(e.target.value)} required placeholder="VD: Vinamilk" className="w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <input value={name} onChange={e => setName(e.target.value)} required placeholder="VD: Vinamilk" className="w-full bg-white border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all" />
             </div>
             <div>
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Mã hiệu (ticker)</label>
-              <input value={ticker} onChange={e => setTicker(e.target.value)} placeholder="VNM" className="w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <input value={ticker} onChange={e => setTicker(e.target.value)} placeholder="VNM" className="w-full bg-white border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="relative">
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Số lượng</label>
-              <CurrencyInput value={units} onChange={e => setUnits(e.target.value)} required placeholder="100" className="w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <CurrencyInput value={units} onChange={e => { setUnits(e.target.value); setLastField('units'); }} required placeholder="100" className="w-full bg-white border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all" />
+              {isInsufficient && !editing && lastField === 'units' && (
+                <div className="absolute top-0 right-0 -translate-y-1/2 z-20 animate-bounce">
+                  <div className="bg-rose-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-lg rotate-2 flex items-center gap-1 whitespace-nowrap">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
+                    </span>
+                    Số dư không đủ
+                  </div>
+                </div>
+              )}
             </div>
             <div>
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Tiền tệ</label>
-              <select value={currency} onChange={e => setCurrency(e.target.value as Currency)} className="w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <select value={currency} onChange={e => setCurrency(e.target.value as Currency)} className="w-full bg-white border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all">
                 {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.symbol} {c.code}</option>)}
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Giá vốn / cổ phiếu</label>
+            <div className="relative">
               <CurrencyInput
                 value={costBasis}
-                onChange={e => setCostBasis(e.target.value)}
+                onChange={e => { setCostBasis(e.target.value); setLastField('costBasis'); }}
                 currency={currency}
                 rate={toVND(1, currency)}
                 required placeholder="50000"
-                className="w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className={`w-full bg-white border ${isInsufficient && !editing ? 'border-rose-300 dark:border-rose-500/30' : 'border-slate-200 dark:border-slate-700'} text-slate-900 dark:bg-slate-800 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all`}
               />
+              {isInsufficient && !editing && lastField === 'costBasis' && (
+                <div className="absolute top-0 right-0 -translate-y-1/2 z-20 animate-bounce">
+                  <div className="bg-rose-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-lg -rotate-2 flex items-center gap-1 whitespace-nowrap">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
+                    </span>
+                    Số dư không đủ
+                  </div>
+                </div>
+              )}
+            </div>
             </div>
             <div>
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Giá hiện tại / cổ phiếu</label>
@@ -113,34 +156,41 @@ function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () 
                 currency={currency}
                 rate={toVND(1, currency)}
                 required placeholder="55000"
-                className="w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-white border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all"
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Ngày mua</label>
-              <input type="date" value={purchaseDate} onChange={e => setPurchaseDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <input type="date" value={purchaseDate} onChange={e => setPurchaseDate(e.target.value)} className="w-full bg-white border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all" />
             </div>
             <div>
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Nguồn tiền (Ví)</label>
               <select 
                 value={walletId} 
                 onChange={e => setWalletId(e.target.value)} 
-                disabled={!!editing}
-                className="w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                disabled={!!editing || compatibleWallets.length === 0}
+                className="w-full bg-white border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 shadow-sm transition-all"
               >
-                <option value="">-- Chọn ví --</option>
-                {wallets.map(w => (
+                <option value="">{compatibleWallets.length === 0 ? '-- Không có ví phù hợp --' : '-- Chọn ví --'}</option>
+                {compatibleWallets.map(w => (
                   <option key={w.id} value={w.id}>{w.name} ({formatCurrency(w.balance, w.currency as Currency, true)})</option>
                 ))}
               </select>
+              {compatibleWallets.length === 0 && !editing && (
+                <div className="mt-1.5 p-2 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-lg">
+                  <p className="text-[10px] text-rose-600 dark:text-rose-400 leading-relaxed">
+                    Bạn chưa có ví <strong>{currency}</strong>. Vui lòng <a href="/wallets" className="underline font-bold hover:text-rose-700">tạo ví tương ứng</a> để thanh toán.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
           <div className="grid grid-cols-1 gap-3">
             <div>
               <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Loại tài sản</label>
-              <select value={assetType} onChange={e => setAssetType(e.target.value as any)} className="w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <select value={assetType} onChange={e => setAssetType(e.target.value as any)} className="w-full bg-white border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all">
                 <option value="STOCK">Cổ phiếu</option>
                 <option value="CRYPTO">Tiền điện tử / Crypto</option>
                 <option value="GOLD">Vàng / Kim loại quý</option>
@@ -151,11 +201,17 @@ function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () 
           </div>
           <div>
             <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Ghi chú</label>
-            <input value={notes} onChange={e => setNotes(e.target.value)} className="w-full bg-slate-50 border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <input value={notes} onChange={e => setNotes(e.target.value)} className="w-full bg-white border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all" />
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">Hủy</button>
-            <button type="submit" className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-semibold shadow-lg hover:from-violet-600 hover:to-purple-700 transition-all">Lưu</button>
+             <button 
+               type="submit" 
+               disabled={(!editing && (compatibleWallets.length === 0 || isInsufficient)) || isPending}
+               className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-semibold shadow-lg hover:from-violet-600 hover:to-purple-700 transition-all disabled:opacity-50"
+             >
+               Lưu
+             </button>
           </div>
         </form>
       </div>

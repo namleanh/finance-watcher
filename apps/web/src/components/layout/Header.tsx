@@ -38,7 +38,7 @@ export default function Header({ title, subtitle }: HeaderProps) {
       </div>
       <div className="hidden md:flex items-center gap-4">
         <div className="hidden sm:flex flex-col items-end">
-          <span className="text-xs text-slate-500 dark:text-slate-400">Tài sản ròng</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">Tổng tài sản ước tính</span>
           <span className="text-lg font-bold text-emerald-500 dark:text-emerald-400">
             {formatCurrency(netWorth, 'VND', true)}
           </span>

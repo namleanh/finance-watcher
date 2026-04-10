@@ -26,6 +26,10 @@ export class CreateSavingsDepositDto {
   @IsString()
   @IsOptional()
   walletId?: string;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
 }
 
 export class UpdateSavingsDepositDto {

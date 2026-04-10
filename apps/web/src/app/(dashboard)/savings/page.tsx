@@ -5,6 +5,7 @@ import { Plus, Trash2, Banknote, TrendingUp, Clock, X, Landmark } from 'lucide-r
 import { useSavingsDeposits, useCreateSavingsDeposit, useDeleteSavingsDeposit, SavingsDeposit } from '@/hooks/api/useSavingsDeposits';
 import { useWallets } from '@/hooks/api/useWallets';
 import { formatCurrency } from '@/lib/exchangeRate';
+import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
 import { format, parseISO, isPast } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import Header from '@/components/layout/Header';
@@ -47,6 +48,11 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
   const [notes, setNotes] = useState('');
   const [walletId, setWalletId] = useState('');
 
+  // Derived currency from selected wallet
+  const selectedWallet = wallets.find(w => w.id === walletId);
+  const currency = (selectedWallet?.currency as Currency) || 'VND';
+  const isInsufficient = selectedWallet && (parseFloat(amount) || 0) > selectedWallet.balance;
+
   if (!open) return null;
 
   const previewInterest = amount && interestRate
@@ -68,6 +74,7 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
         termMonths,
         interestRate: parseFloat(interestRate),
         depositDate: new Date(depositDate).toISOString(),
+        currency,
         notes,
         walletId,
       });
@@ -93,7 +100,7 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto max-h-[80vh]">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto no-scrollbar max-h-[80vh]">
           {/* Bank name */}
           <div>
             <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5 block">Ngân hàng</label>
@@ -108,12 +115,26 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
           {/* Amount */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5 block">Số tiền gửi (VND)</label>
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5 block">Số tiền gửi ({currency})</label>
+            <div className="relative">
               <CurrencyInput
                 value={amount} onChange={(e: any) => setAmount(e.target.value)}
                 placeholder="0" required
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                currency={currency}
+                className={`w-full bg-white dark:bg-slate-800 border ${isInsufficient ? 'border-rose-300 dark:border-rose-500/30' : 'border-slate-200 dark:border-slate-700'} text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all`}
               />
+              {isInsufficient && (
+                <div className="absolute top-0 right-0 -translate-y-1/2 z-10 animate-bounce">
+                  <div className="bg-rose-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-lg rotate-3 flex items-center gap-1">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
+                    </span>
+                    Số dư không đủ
+                  </div>
+                </div>
+              )}
+            </div>
             </div>
             <div>
               <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5 block">Nguồn tiền (Ví)</label>
@@ -121,7 +142,7 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
                 value={walletId}
                 onChange={e => setWalletId(e.target.value)}
                 required
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all"
               >
                 <option value="">-- Chọn ví --</option>
                 {wallets.map(w => (
@@ -132,6 +153,7 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
               </select>
             </div>
           </div>
+
 
           {/* Term */}
           <div>
@@ -154,7 +176,7 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
           </div>
 
           {/* Interest rate + Date */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5 block">Lãi suất (%/năm)</label>
               <input
@@ -164,14 +186,14 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
                   if (/^[0-9.]*$/.test(val)) setInterestRate(val);
                 }}
                 placeholder="5.5" required
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all"
               />
             </div>
             <div>
               <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5 block">Ngày gửi</label>
               <input
                 type="date" value={depositDate} onChange={e => setDepositDate(e.target.value)} required
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all"
               />
             </div>
           </div>
@@ -186,11 +208,11 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-slate-500">Tiền lãi dự kiến:</span>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatCurrency(previewInterest, 'VND', true)}</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatCurrency(previewInterest, currency, true)}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-slate-500">Tổng nhận được:</span>
-                <span className="font-bold text-indigo-600 dark:text-indigo-400">{formatCurrency(parseFloat(amount) + previewInterest, 'VND', true)}</span>
+                <span className="font-bold text-indigo-600 dark:text-indigo-400">{formatCurrency(parseFloat(amount) + previewInterest, currency, true)}</span>
               </div>
             </div>
           )}
@@ -201,12 +223,12 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
             <input
               type="text" value={notes} onChange={e => setNotes(e.target.value)}
               placeholder="Số sổ tiết kiệm, chi nhánh..."
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all"
             />
           </div>
 
           <button
-            type="submit" disabled={isPending}
+            type="submit" disabled={isPending || isInsufficient}
             className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-semibold text-sm hover:from-indigo-600 hover:to-violet-700 transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50 mt-2"
           >
             {isPending ? 'Đang lưu...' : 'Thêm sổ tiết kiệm'}
@@ -220,11 +242,17 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
 export default function SavingsDepositsPage() {
   const { data: deposits = [], isLoading } = useSavingsDeposits();
   const { mutate: deleteDeposit, isPending: isDeleting } = useDeleteSavingsDeposit();
+  const { toVND } = useCurrencyConverter();
   const [showModal, setShowModal] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const totalDeposited = deposits.filter(d => d.status === 'ACTIVE').reduce((s, d) => s + d.depositAmount, 0);
-  const totalInterest = deposits.filter(d => d.status === 'ACTIVE').reduce((s, d) => s + d.interestEarned, 0);
+  const totalDeposited = deposits
+    .filter(d => d.status === 'ACTIVE')
+    .reduce((s, d) => s + toVND(d.depositAmount, d.currency as Currency), 0);
+    
+  const totalInterest = deposits
+    .filter(d => d.status === 'ACTIVE')
+    .reduce((s, d) => s + toVND(d.interestEarned, d.currency as Currency), 0);
 
   return (
     <div className="flex flex-col h-full">
@@ -319,7 +347,7 @@ export default function SavingsDepositsPage() {
                             </div>
                           </td>
                           <td className="px-4 py-4 text-right whitespace-nowrap">
-                            <span className="text-sm font-semibold text-slate-900 dark:text-white">{formatCurrency(d.depositAmount, 'VND', true)}</span>
+                            <span className="text-sm font-semibold text-slate-900 dark:text-white">{formatCurrency(d.depositAmount, d.currency as Currency, true)}</span>
                           </td>
                           <td className="px-4 py-4 text-center text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
                             {format(parseISO(d.depositDate), 'dd/MM/yyyy', { locale: vi })}
@@ -339,7 +367,7 @@ export default function SavingsDepositsPage() {
                           </td>
                           <td className="px-3 py-4 text-right whitespace-nowrap">
                             <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                              +{formatCurrency(d.interestEarned, 'VND', true)}
+                              +{formatCurrency(d.interestEarned, d.currency as Currency, true)}
                             </span>
                           </td>
                           <td className="px-5 py-4 text-center">
@@ -394,11 +422,11 @@ export default function SavingsDepositsPage() {
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3">
                           <p className="text-slate-400 mb-1">Số tiền gửi</p>
-                          <p className="font-bold text-sm text-slate-900 dark:text-white">{formatCurrency(d.depositAmount, 'VND', true)}</p>
+                          <p className="font-bold text-sm text-slate-900 dark:text-white">{formatCurrency(d.depositAmount, d.currency as Currency, true)}</p>
                         </div>
                         <div className="bg-emerald-50 dark:bg-emerald-500/10 rounded-xl p-3">
                           <p className="text-slate-400 mb-1">Tiền lãi</p>
-                          <p className="font-bold text-sm text-emerald-600 dark:text-emerald-400">+{formatCurrency(d.interestEarned, 'VND', true)}</p>
+                          <p className="font-bold text-sm text-emerald-600 dark:text-emerald-400">+{formatCurrency(d.interestEarned, d.currency as Currency, true)}</p>
                         </div>
                         <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3">
                           <p className="text-slate-400 mb-1">Kỳ hạn / Lãi suất</p>

@@ -250,6 +250,7 @@ model SavingsDeposit {
   depositAmount  BigInt   @map("deposit_amount")   // VND
   termMonths     Int      @map("term_months")       // kỳ hạn (tháng): 1, 3, 6, 12, 18, 24
   interestRate   Decimal  @map("interest_rate") @db.Decimal(5,2)  // % năm, ví dụ: 5.50
+  currency       String   @default("VND")
   depositDate    DateTime @map("deposit_date") @db.Date
   maturityDate   DateTime @map("maturity_date") @db.Date
   status         String   @default("ACTIVE")        // ACTIVE | MATURED | WITHDRAWN

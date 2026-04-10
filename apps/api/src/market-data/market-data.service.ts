@@ -52,18 +52,12 @@ export class MarketDataService implements OnModuleInit {
 
     const marketData = await this.findAll();
 
-    const coreSymbols = ['SJC_BUY', 'SJC_SELL', 'RING_BUY', 'RING_SELL', 'USD'];
     const preferredSymbols = preferences.map(p => p.symbol);
     
-    // Core symbols first
-    const coreItems = marketData.filter(item => coreSymbols.includes(item.symbol));
-    
-    // Then user preferences in order of creation
-    const preferredItems = preferredSymbols.map(sym => 
+    // Return only user preferences in order of creation
+    return preferredSymbols.map(sym => 
       marketData.find(item => item.symbol === sym)
     ).filter(Boolean);
-
-    return [...coreItems, ...preferredItems];
   }
 
   async togglePreference(userId: string, symbol: string, type: MarketDataType) {
@@ -110,10 +104,32 @@ export class MarketDataService implements OnModuleInit {
 
   private async refreshGold() {
     try {
-      await this.updatePrice('SJC_BUY', MarketDataType.GOLD, 167500000);
-      await this.updatePrice('SJC_SELL', MarketDataType.GOLD, 171000000);
-      await this.updatePrice('RING_BUY', MarketDataType.GOLD, 167500000);
-      await this.updatePrice('RING_SELL', MarketDataType.GOLD, 171000000);
+      const response = await fetch('https://gw.vnexpress.net/th?types=gia_vang_v2');
+      const json = await response.json();
+      const goldData = json.data?.gia_vang_v2;
+
+      if (!goldData) {
+        throw new Error('Invalid gold data response structure');
+      }
+
+      const parsePrice = (val: string) => {
+        // VnExpress uses dot as thousand separator and comma as decimal
+        // e.g., "169,7" or "4.762,2"
+        const normalized = val.replace(/\./g, '').replace(',', '.');
+        return parseFloat(normalized) * 1_000_000;
+      };
+
+      if (goldData.sjc) {
+        await this.updatePrice('SJC_BUY', MarketDataType.GOLD, parsePrice(goldData.sjc.buy));
+        await this.updatePrice('SJC_SELL', MarketDataType.GOLD, parsePrice(goldData.sjc.sell));
+      }
+
+      if (goldData.vangnhan9999) {
+        await this.updatePrice('RING_BUY', MarketDataType.GOLD, parsePrice(goldData.vangnhan9999.buy));
+        await this.updatePrice('RING_SELL', MarketDataType.GOLD, parsePrice(goldData.vangnhan9999.sell));
+      }
+      
+      this.logger.log('Gold prices updated from VnExpress');
     } catch (error) {
       this.logger.error('Gold refresh failed', error);
     }

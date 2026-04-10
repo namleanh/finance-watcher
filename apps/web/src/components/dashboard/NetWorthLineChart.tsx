@@ -27,10 +27,10 @@ export default function NetWorthLineChart() {
   };
 
   return (
-    <div className="rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/50 p-5 shadow-sm">
+    <div className="rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/50 p-5 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="font-semibold text-slate-900 dark:text-white">Biến động tài sản ròng</h3>
+          <h3 className="font-semibold text-slate-900 dark:text-white">Biến động tài sản</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">Theo từng tháng</p>
         </div>
         <select

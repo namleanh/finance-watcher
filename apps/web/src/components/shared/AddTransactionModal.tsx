@@ -59,6 +59,10 @@ export default function AddTransactionModal({ open, onClose }: Props) {
   const [assetType, setAssetType] = useState('STOCK');
   const [currentPrice, setCurrentPrice] = useState('');
 
+  const selectedWallet = wallets.find(w => w.id === walletId);
+  const isInsufficient = (type === 'EXPENSE' || type === 'SAVING' || type === 'INVESTMENT') && 
+    selectedWallet && (parseFloat(amount) || 0) > selectedWallet.balance;
+
   const cats = CATEGORIES.filter(c => c.type === type);
   const selectedCat = cats.find(c => c.label === category);
 
@@ -86,12 +90,20 @@ export default function AddTransactionModal({ open, onClose }: Props) {
     }
   }, [category, type]);
 
-  // Auto-select first wallet
+  // Filter wallets by selected currency
+  const compatibleWallets = wallets.filter(w => w.currency === currency);
+
+  // Auto-select first compatible wallet when currency changes
   useEffect(() => {
-    if (wallets.length > 0 && !walletId) {
-      setWalletId(wallets[0].id);
+    const currentWallet = wallets.find(w => w.id === walletId);
+    if (!currentWallet || currentWallet.currency !== currency) {
+      if (compatibleWallets.length > 0) {
+        setWalletId(compatibleWallets[0].id);
+      } else {
+        setWalletId('');
+      }
     }
-  }, [wallets]);
+  }, [currency, wallets]);
 
   if (!open) return null;
 
@@ -159,12 +171,12 @@ export default function AddTransactionModal({ open, onClose }: Props) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-2">
             <Plus size={18} className="text-indigo-500" />
-            <h2 className="font-semibold dark:text-white">Thêm giao dịch</h2>
+            <h2 className="font-semibold text-slate-900 dark:text-white">Thêm giao dịch</h2>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white"><X size={20} /></button>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"><X size={20} /></button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto max-h-[85vh]">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto no-scrollbar max-h-[85vh]">
           {/* Type */}
           <div>
             <label className="text-xs font-medium text-slate-400 uppercase mb-2 block">Loại</label>
@@ -172,7 +184,7 @@ export default function AddTransactionModal({ open, onClose }: Props) {
               {TYPE_OPTIONS.map(opt => (
                 <button
                   key={opt.value} type="button" onClick={() => setType(opt.value)}
-                  className={`py-2 px-1 rounded-xl text-[10px] font-medium transition-all ${type === opt.value ? `bg-gradient-to-r ${opt.color} text-white` : 'bg-slate-50 dark:bg-slate-800 text-slate-500'}`}
+                  className={`py-2 px-1 rounded-xl text-[10px] font-bold transition-all ${type === opt.value ? `bg-gradient-to-r ${opt.color} text-white shadow-md shadow-indigo-500/20` : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:border-indigo-400 transition-colors'}`}
                 >
                   {opt.label}
                 </button>
@@ -181,8 +193,8 @@ export default function AddTransactionModal({ open, onClose }: Props) {
           </div>
 
           {/* Amount */}
-          <div className="flex gap-2">
-            <div className="flex-1 min-w-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="flex-1 min-w-0 relative">
               <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 block">Số tiền</label>
               <CurrencyInput
                 value={amount}
@@ -191,10 +203,21 @@ export default function AddTransactionModal({ open, onClose }: Props) {
                 rate={getRate(currency)}
                 placeholder="0"
                 required
-                className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500"
+                className={`w-full bg-white dark:bg-slate-800 border ${isInsufficient ? 'border-rose-300 dark:border-rose-500/30' : 'border-slate-200 dark:border-slate-700'} rounded-xl px-4 py-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all`}
               />
+              {isInsufficient && (
+                <div className="absolute top-0 right-0 -translate-y-1/2 z-10 animate-bounce">
+                  <div className="bg-rose-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-lg rotate-2 flex items-center gap-1 whitespace-nowrap">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
+                    </span>
+                    Số dư không đủ
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="w-24">
+            <div className="w-full sm:w-24">
               <label className="text-xs font-medium text-slate-400 uppercase mb-2 block">Đơn vị</label>
               <select 
                 value={currency} 
@@ -203,7 +226,7 @@ export default function AddTransactionModal({ open, onClose }: Props) {
                   setAmount('');
                   setCurrentPrice('');
                 }} 
-                className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-2 py-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all"
               >
                 {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
               </select>
@@ -217,21 +240,42 @@ export default function AddTransactionModal({ open, onClose }: Props) {
             </div>
           </div>
 
+
           {/* Wallet Selection */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-medium text-slate-400 uppercase">Chọn ví</label>
+              <label className="text-xs font-medium text-slate-400 uppercase">Chọn ví thanh toán</label>
               {walletId && (
                 <span className="text-[10px] font-semibold text-slate-400">
-                  Số dư: {formatCurrency(wallets.find(w => w.id === walletId)?.balance || 0, 'VND', true)}
+                  Số dư: {formatCurrency(wallets.find(w => w.id === walletId)?.balance || 0, currency as any, true)}
                 </span>
               )}
             </div>
-            <select value={walletId} onChange={e => setWalletId(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500">
-              {wallets.map(w => (
-                <option key={w.id} value={w.id}>{w.name} ({formatCurrency(w.balance, w.currency as any, true)})</option>
-              ))}
-            </select>
+            {compatibleWallets.length > 0 ? (
+              <select 
+                value={walletId} 
+                onChange={e => setWalletId(e.target.value)} 
+                required 
+                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all"
+              >
+                {compatibleWallets.map(w => (
+                  <option key={w.id} value={w.id}>{w.name} ({formatCurrency(w.balance, w.currency as any, true)})</option>
+                ))}
+              </select>
+            ) : (
+              <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-500/10 flex flex-col gap-2">
+                <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                  Bạn chưa có ví **{currency}** nào.
+                </p>
+                <Link 
+                  href="/wallets" 
+                  onClick={onClose}
+                  className="text-[10px] text-amber-700 dark:text-amber-500 font-bold underline decoration-dotted"
+                >
+                  + Click để tạo ví {currency} mới
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Goal & Deposit selection for Saving */}
@@ -308,10 +352,10 @@ export default function AddTransactionModal({ open, onClose }: Props) {
               <div>
                 <label className="text-[10px] font-bold text-violet-500 uppercase mb-1.5 block">Giá hiện tại (Mặc định bằng giá mua)</label>
                 <div className="relative">
-                  <CurrencyInput
-                    value={currentPrice} onChange={e => setCurrentPrice(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-900 border-none rounded-xl px-4 py-2 text-sm dark:text-white focus:ring-2 focus:ring-violet-500"
-                  />
+              <CurrencyInput
+                value={currentPrice} onChange={e => setCurrentPrice(e.target.value)}
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-sm dark:text-white focus:ring-2 focus:ring-violet-500 shadow-sm transition-all"
+              />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-bold">{currency}</span>
                 </div>
               </div>
@@ -323,14 +367,14 @@ export default function AddTransactionModal({ open, onClose }: Props) {
             <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-300">
               <div>
                 <label className="text-xs font-medium text-slate-400 uppercase mb-2 block">Danh mục</label>
-                <select value={category} onChange={e => setCategory(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-3 py-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500">
+                <select value={category} onChange={e => setCategory(e.target.value)} required className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all">
                   <option value="">Chọn</option>
                   {cats.map(c => <option key={c.label} value={c.label}>{c.label}</option>)}
                 </select>
               </div>
               <div>
                 <label className="text-xs font-medium text-slate-400 uppercase mb-2 block">Phân mục</label>
-                <select value={subCategory} onChange={e => setSubCategory(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-3 py-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 disabled:opacity-40" disabled={!category}>
+                <select value={subCategory} onChange={e => setSubCategory(e.target.value)} className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all disabled:opacity-40" disabled={!category}>
                   <option value="">Chọn</option>
                   {selectedCat?.subCategories.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
@@ -339,13 +383,22 @@ export default function AddTransactionModal({ open, onClose }: Props) {
           )}
 
           {/* Date */}
-          <div>
+          <div className="w-full">
             <label className="text-xs font-medium text-slate-400 uppercase mb-2 block">Ngày</label>
-            <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-3 py-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500" />
+            <input 
+              type="date" 
+              value={date} 
+              onChange={e => setDate(e.target.value)} 
+              className="w-full block bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all" 
+            />
           </div>
 
-          <button type="submit" disabled={isPending} className="w-full py-4 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-bold text-sm shadow-xl disabled:opacity-50 mt-4">
-            {isPending ? 'Đang lưu...' : 'Thêm giao dịch'}
+          <button 
+            type="submit" 
+            disabled={isPending || compatibleWallets.length === 0 || isInsufficient} 
+            className="w-full py-4 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-bold text-sm shadow-xl disabled:opacity-50 disabled:grayscale mt-4"
+          >
+            {isPending ? 'Đang lưu...' : (compatibleWallets.length === 0 ? `Cần ví ${currency} để tiếp tục` : 'Thêm giao dịch')}
           </button>
         </form>
       </div>

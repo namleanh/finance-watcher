@@ -70,7 +70,7 @@ export const CATEGORIES: {
   },
   {
     type: 'EXPENSE', label: 'Mua sắm', color: '#e11d48',
-    subCategories: ['Quần áo', 'Giày dép', 'Điện tử', 'Gia dụng', 'Khác'],
+    subCategories: ['Siêu thị', 'Quần áo', 'Giày dép', 'Điện tử', 'Gia dụng', 'Khác'],
   },
   {
     type: 'EXPENSE', label: 'Sức khỏe', color: '#be185d',

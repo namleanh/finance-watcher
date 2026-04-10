@@ -11,6 +11,7 @@ export interface SavingsDeposit {
   depositDate: string;
   maturityDate: string;
   status: 'ACTIVE' | 'MATURED' | 'WITHDRAWN';
+  currency: string;
   notes?: string;
   walletId?: string;
   walletName?: string;

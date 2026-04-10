@@ -3,7 +3,18 @@ import { useMarketFavorites, useRefreshMarketData, useToggleMarketPreference } f
 import { RefreshCw, DollarSign, Gem, TrendingUp, Plus, X, Calculator, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 
-const AVAILABLE_CURRENCIES = ['MYR', 'EUR', 'JPY', 'GBP', 'AUD', 'SGD', 'KRW'];
+const ADDABLE_ITEMS = [
+  { symbol: 'SJC', type: 'GOLD', label: 'Vàng SJC' },
+  { symbol: 'RING', type: 'GOLD', label: 'Vàng Nhẫn' },
+  { symbol: 'USD', type: 'CURRENCY', label: 'USD' },
+  { symbol: 'MYR', type: 'CURRENCY', label: 'MYR' },
+  { symbol: 'EUR', type: 'CURRENCY', label: 'EUR' },
+  { symbol: 'JPY', type: 'CURRENCY', label: 'JPY' },
+  { symbol: 'GBP', type: 'CURRENCY', label: 'GBP' },
+  { symbol: 'AUD', type: 'CURRENCY', label: 'AUD' },
+  { symbol: 'SGD', type: 'CURRENCY', label: 'SGD' },
+  { symbol: 'KRW', type: 'CURRENCY', label: 'KRW' },
+];
 
 export default function MarketDataWidget() {
   const { data: items, isLoading, isError } = useMarketFavorites();
@@ -76,25 +87,36 @@ export default function MarketDataWidget() {
     if (!buy && !sell) return null;
 
     return (
-      <div key={type} className="min-w-[125px] p-2.5 rounded-2xl bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/10 hover:border-amber-500/20 transition-all shrink-0">
-        <div className="flex items-center gap-1.5 mb-2">
-          <Gem size={10} className="text-amber-600 dark:text-amber-400" />
-          <span className="text-[8px] font-bold text-amber-800 dark:text-amber-200 uppercase tracking-widest">{title}</span>
+      <div key={type} className="min-w-[150px] h-32 p-3 rounded-2xl bg-white dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/10 shadow-sm hover:shadow-md hover:border-amber-500/30 transition-all shrink-0 flex flex-col justify-between group">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Gem size={14} className="text-amber-600 dark:text-amber-400" />
+            <span className="text-[15px] font-bold text-amber-800 dark:text-amber-200 uppercase tracking-widest">{title}</span>
+          </div>
+          <button 
+            onClick={() => {
+              togglePreference({ symbol: `${type}_BUY`, type: 'GOLD' });
+              togglePreference({ symbol: `${type}_SELL`, type: 'GOLD' });
+            }}
+            className="p-1 rounded bg-red-50 dark:bg-red-500/10 text-red-500 dark:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+          >
+            <X size={10} />
+          </button>
         </div>
-        <div className="grid grid-cols-1 gap-1.5">
+        <div className="grid grid-cols-1 gap-2">
           <button 
             onClick={() => buy && handlePriceClick(Number(buy.price))}
-            className="flex justify-between items-center bg-white dark:bg-white/5 px-2 py-1.5 rounded-lg border border-amber-100 dark:border-white/5 hover:bg-amber-100 dark:hover:bg-white/10 active:scale-95 transition-all text-left"
+            className="flex justify-between items-center bg-white dark:bg-white/5 px-2.5 py-2 rounded-lg border border-amber-100 dark:border-white/5 hover:bg-amber-100 dark:hover:bg-white/10 active:scale-95 transition-all text-left"
           >
-            <span className="text-[8px] text-amber-600 dark:text-slate-500 font-bold">MUA</span>
-            <span className="text-[10px] font-bold text-slate-900 dark:text-white tracking-tight">{buy ? formatPrice(Number(buy.price)) : '--'}</span>
+            <span className="text-[10px] text-amber-600 dark:text-slate-500 font-bold">MUA</span>
+            <span className="text-[12px] font-bold text-slate-900 dark:text-white tracking-tight">{buy ? formatPrice(Number(buy.price)) : '--'}</span>
           </button>
           <button 
             onClick={() => sell && handlePriceClick(Number(sell.price))}
-            className="flex justify-between items-center bg-white dark:bg-white/5 px-2 py-1.5 rounded-lg border border-amber-100 dark:border-white/5 hover:bg-amber-100 dark:hover:bg-white/10 active:scale-95 transition-all text-left"
+            className="flex justify-between items-center bg-white dark:bg-white/5 px-2.5 py-2 rounded-lg border border-amber-100 dark:border-white/5 hover:bg-amber-100 dark:hover:bg-white/10 active:scale-95 transition-all text-left"
           >
-            <span className="text-[8px] text-amber-600 dark:text-slate-500 font-bold">BÁN</span>
-            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">{sell ? formatPrice(Number(sell.price)) : '--'}</span>
+            <span className="text-[10px] text-amber-600 dark:text-slate-500 font-bold">BÁN</span>
+            <span className="text-[12px] font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">{sell ? formatPrice(Number(sell.price)) : '--'}</span>
           </button>
         </div>
       </div>
@@ -105,28 +127,26 @@ export default function MarketDataWidget() {
     <button 
       key={item.symbol} 
       onClick={() => handlePriceClick(Number(item.price))}
-      className="min-w-[110px] relative p-3 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 hover:border-indigo-500/20 hover:bg-slate-50 dark:hover:bg-white/10 active:scale-95 transition-all group text-left shrink-0"
+      className="min-w-[130px] h-32 relative p-4 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 shadow-sm hover:shadow-md hover:border-indigo-500/20 hover:bg-slate-50 dark:hover:bg-white/10 active:scale-95 transition-all group text-left shrink-0 flex flex-col justify-between"
     >
       <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5">
-          <div className="p-0.5 rounded bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
-            <DollarSign size={10} />
+        <div className="flex items-center gap-2">
+          <div className="p-1 rounded bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
+            <DollarSign size={14} />
           </div>
-          <span className="text-[8px] font-bold text-slate-500 dark:text-slate-300 uppercase tracking-widest">{item.symbol}</span>
+          <span className="text-[15px] font-bold text-slate-500 dark:text-slate-300 uppercase tracking-widest">{item.symbol}</span>
         </div>
-        {item.symbol !== 'USD' && (
-          <div 
-            onClick={(e) => {
-              e.stopPropagation();
-              togglePreference({ symbol: item.symbol, type: 'CURRENCY' });
-            }}
-            className="p-1 rounded opacity-0 group-hover:opacity-100 bg-red-50 dark:bg-red-500/10 text-red-500 dark:text-red-400 hover:bg-red-100 transition-all cursor-pointer"
-          >
-            <X size={8} />
-          </div>
-        )}
+        <div 
+          onClick={(e) => {
+            e.stopPropagation();
+            togglePreference({ symbol: item.symbol, type: 'CURRENCY' });
+          }}
+          className="p-1 rounded opacity-0 group-hover:opacity-100 bg-red-50 dark:bg-red-500/10 text-red-500 dark:text-red-400 hover:bg-red-100 transition-all cursor-pointer"
+        >
+          <X size={10} />
+        </div>
       </div>
-      <div className="text-[11px] font-black text-slate-900 dark:text-white tracking-tighter">
+      <div className="text-[13px] font-black text-slate-900 dark:text-white tracking-tighter mt-auto">
         {formatPrice(Number(item.price))}
       </div>
     </button>
@@ -196,17 +216,18 @@ export default function MarketDataWidget() {
       {isExpanded && (
         <div className="px-6 pb-4 pt-1 animate-in slide-in-from-top-2 duration-300">
           <div className="flex items-center gap-3 overflow-x-auto pb-4 no-scrollbar">
-            {renderGoldCard('SJC', 'Vàng SJC')}
-            {renderGoldCard('RING', 'Vàng Nhẫn')}
-            
             <button 
               onClick={() => setShowAddMenu(true)}
-              className="flex flex-col items-center justify-center gap-1 p-3 min-w-[80px] rounded-2xl bg-slate-50 dark:bg-white/[0.01] border border-dashed border-slate-200 dark:border-white/5 hover:border-indigo-500/20 transition-all shrink-0"
+              className="flex flex-col items-center justify-center gap-2 p-3 min-w-[100px] h-32 rounded-2xl bg-white dark:bg-white/[0.01] border border-dashed border-slate-300 dark:border-white/5 hover:border-indigo-500/40 hover:bg-slate-50 transition-all shrink-0 shadow-sm"
             >
-              <Plus className="w-4 h-4 text-slate-400" />
-              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Thêm</span>
+              <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center border border-slate-200 dark:border-transparent">
+                <Plus className="w-5 h-5 text-slate-500" />
+              </div>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Thêm</span>
             </button>
 
+            {renderGoldCard('SJC', 'Vàng SJC')}
+            {renderGoldCard('RING', 'Vàng Nhẫn')}
             {currencies.map(renderForexCard)}
           </div>
 
@@ -278,22 +299,41 @@ export default function MarketDataWidget() {
                 <X size={20} />
               </button>
             </div>
-            <div className="p-3 max-h-[50vh] overflow-y-auto no-scrollbar grid grid-cols-1 gap-1">
-              {AVAILABLE_CURRENCIES
-                .filter(code => !currencies.find(c => c.symbol === code))
-                .map(code => (
+            <div className="p-4 max-h-[60vh] overflow-y-auto no-scrollbar grid grid-cols-1 gap-1.5">
+              {ADDABLE_ITEMS
+                .filter(item => {
+                  if (item.type === 'GOLD') {
+                    // Check if either buy or sell is missing
+                    return !items?.find(i => i.symbol === `${item.symbol}_BUY`);
+                  }
+                  return !items?.find(i => i.symbol === item.symbol);
+                })
+                .map(item => (
                   <button
-                    key={code}
-                    onClick={() => { togglePreference({ symbol: code, type: 'CURRENCY' }); setShowAddMenu(false); }}
-                    className="w-full px-4 py-3 text-left hover:bg-white/5 flex items-center justify-between group rounded-xl transition-all"
+                    key={item.symbol}
+                    onClick={() => { 
+                      if (item.type === 'GOLD') {
+                        togglePreference({ symbol: `${item.symbol}_BUY`, type: 'GOLD' });
+                        togglePreference({ symbol: `${item.symbol}_SELL`, type: 'GOLD' });
+                      } else {
+                        togglePreference({ symbol: item.symbol, type: 'CURRENCY' });
+                      }
+                      setShowAddMenu(false); 
+                    }}
+                    className="w-full px-5 py-4 text-left hover:bg-white/5 flex items-center justify-between group rounded-2xl transition-all"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-xs font-bold text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all">
-                        {code.substring(0, 1)}
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold transition-all ${
+                        item.type === 'GOLD' ? 'bg-amber-500/10 text-amber-500 group-hover:bg-amber-500' : 'bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500'
+                      } group-hover:text-white`}>
+                        {item.type === 'GOLD' ? <Gem size={18} /> : item.symbol.substring(0, 1)}
                       </div>
-                      <span className="text-sm font-bold text-slate-300 group-hover:text-white">{code}</span>
+                      <div>
+                        <span className="text-[15px] font-bold text-slate-300 group-hover:text-white block">{item.label}</span>
+                        <span className="text-[10px] text-slate-500 uppercase tracking-widest">{item.type}</span>
+                      </div>
                     </div>
-                    <Plus size={16} className="text-slate-600 group-hover:text-indigo-400" />
+                    <Plus size={18} className="text-slate-600 group-hover:text-indigo-400" />
                   </button>
                 ))}
             </div>
