@@ -57,7 +57,7 @@ export function formatCurrency(
   if (currency === 'VND') {
     return `${Math.round(amount).toLocaleString('en-US')}\u00A0${sym}`;
   }
-  return `${sym}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `${sym}${amount.toLocaleString('en-US')}`;
 }
 
 /**

@@ -60,7 +60,7 @@ model Wallet {
 
   name      String                         // encrypted: "Tiền mặt", "MBBank"
   type      WalletType @default(CASH)
-  balance   BigInt   @default(0)           // in base currency, stored as integer
+  balance   Decimal  @default(0) @db.Decimal(20, 8)           // stored as decimal for precision
   currency  String   @default("VND")
   color     String?
   icon      String?
@@ -95,12 +95,12 @@ model Transaction {
   walletId         String?         @map("wallet_id")
   recurringId      String?         @map("recurring_id")
   type             TransactionType
-  amount           BigInt                          // in base currency (VND)
-  originalAmount   BigInt          @map("original_amount")
+  amount           Decimal         @db.Decimal(20, 8)              // in base currency (VND)
+  originalAmount   Decimal         @map("original_amount") @db.Decimal(20, 8)
   originalCurrency String          @map("original_currency")
   category         String
   subCategory      String?         @map("sub_category")
-  date             DateTime        @db.Date
+  date             DateTime        // Changed from @db.Date to support time
   notes            String?
   createdAt        DateTime        @default(now()) @map("created_at")
   updatedAt        DateTime        @updatedAt @map("updated_at")
@@ -141,10 +141,10 @@ model PortfolioAsset {
   ticker        String?
   assetType     AssetType @default(STOCK) @map("asset_type")
   units         Decimal   @db.Decimal(18, 8)
-  costBasis     BigInt    @map("cost_basis")     // per unit, in VND
-  currentPrice  BigInt    @map("current_price")  // per unit, in VND
+  costBasis     Decimal   @map("cost_basis") @db.Decimal(20, 8)     // per unit, in VND
+  currentPrice  Decimal   @map("current_price") @db.Decimal(20, 8)  // per unit, in VND
   currency      String    @default("VND")
-  purchaseDate  DateTime? @map("purchase_date") @db.Date
+  purchaseDate  DateTime? @map("purchase_date")
   notes         String?
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
@@ -178,9 +178,9 @@ model SavingsGoal {
   id            String     @id @default(uuid())
   userId        String     @map("user_id")
   name          String
-  targetAmount  BigInt     @map("target_amount")
-  currentAmount BigInt     @default(0) @map("current_amount")
-  deadline      DateTime?  @db.Date
+  targetAmount  Decimal    @map("target_amount") @db.Decimal(20, 8)
+  currentAmount Decimal    @default(0) @map("current_amount") @db.Decimal(20, 8)
+  deadline      DateTime?
   color         String?
   icon          String?
   status        GoalStatus @default(ACTIVE)
@@ -210,12 +210,12 @@ model RecurringItem {
   id               String           @id @default(uuid())
   userId           String           @map("user_id")
   type             TransactionType
-  amount           BigInt
+  amount           Decimal          @db.Decimal(20, 8)
   originalCurrency String           @map("original_currency")
   category         String
   subCategory      String?          @map("sub_category")
   interval         RecurringInterval
-  nextDate         DateTime         @map("next_date") @db.Date
+  nextDate         DateTime         @map("next_date")
   notes            String?
   active           Boolean          @default(true)
   createdAt        DateTime         @default(now()) @map("created_at")
@@ -247,12 +247,12 @@ model SavingsDeposit {
   bankNameHash   String?  @map("bank_name_hash")
 
   bankName       String   @map("bank_name")      // encrypted
-  depositAmount  BigInt   @map("deposit_amount")   // VND
+  depositAmount  Decimal  @map("deposit_amount") @db.Decimal(20, 8)   // VND
   termMonths     Int      @map("term_months")       // kỳ hạn (tháng): 1, 3, 6, 12, 18, 24
   interestRate   Decimal  @map("interest_rate") @db.Decimal(5,2)  // % năm, ví dụ: 5.50
   currency       String   @default("VND")
-  depositDate    DateTime @map("deposit_date") @db.Date
-  maturityDate   DateTime @map("maturity_date") @db.Date
+  depositDate    DateTime @map("deposit_date")
+  maturityDate   DateTime @map("maturity_date")
   status         String   @default("ACTIVE")        // ACTIVE | MATURED | WITHDRAWN
   notes          String?
   createdAt      DateTime @default(now()) @map("created_at")

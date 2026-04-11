@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Trash2, Wallet, Building2, Smartphone, CreditCard, Coins, Edit2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Trash2, Wallet, Building2, Smartphone, CreditCard, Coins, Edit2 } from 'lucide-react';
 import { useWallets, useCreateWallet, useDeleteWallet, useUpdateWallet, Wallet as WalletType } from '@/hooks/api/useWallets';
 import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
@@ -12,6 +12,8 @@ import Header from '@/components/layout/Header';
 import DeleteConfirmModal from '@/components/shared/DeleteConfirmModal';
 import CurrencyInput from '@/components/shared/CurrencyInput';
 import { usePrivacy } from '@/context/PrivacyContext';
+import PrivacyMask from '@/components/shared/PrivacyMask';
+import WalletDetailModal from '@/components/shared/WalletDetailModal';
 
 const WALLET_ICONS: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
   CASH: { icon: Coins, color: 'text-amber-500', bg: 'bg-amber-500/10' },
@@ -214,6 +216,7 @@ export default function WalletsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editWallet, setEditWallet] = useState<WalletType | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [selectedWallet, setSelectedWallet] = useState<WalletType | null>(null);
   const { maskValue, isCategoryHidden, toggleCategory } = usePrivacy();
 
   const totalBalance = wallets.reduce((s, w) => s + toVND(w.balance, w.currency as Currency), 0);
@@ -233,14 +236,13 @@ export default function WalletsPage() {
         <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-700 p-6 text-white shadow-xl shadow-indigo-500/20">
           <p className="text-sm text-indigo-200 mb-1">Tổng số dư tất cả ví</p>
           <div className="flex items-center gap-3">
-            <p className="text-3xl font-bold">{maskValue(formatCurrency(totalBalance, 'VND', false), 'NET_WORTH')}</p>
-            <button
-              onClick={() => toggleCategory('NET_WORTH')}
-              className="p-1.5 rounded-lg text-white/50 hover:text-white transition-colors"
-              title={isCategoryHidden('NET_WORTH') ? 'Hiện số dư' : 'Ẩn số dư'}
-            >
-              {isCategoryHidden('NET_WORTH') ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
+            <div className="text-3xl font-bold">
+              <PrivacyMask 
+                value={formatCurrency(totalBalance, 'VND', false)} 
+                category="NET_WORTH" 
+              />
+            </div>
+
           </div>
           <p className="text-sm text-indigo-200 mt-2">{wallets.length} ví đang hoạt động</p>
         </div>
@@ -281,7 +283,8 @@ export default function WalletsPage() {
               return (
                 <div
                   key={wallet.id}
-                  className="relative rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/50 p-5 shadow-sm hover:shadow-md transition-all group overflow-hidden"
+                  onClick={() => setSelectedWallet(wallet)}
+                  className="relative rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/50 p-5 shadow-sm hover:shadow-md transition-all group overflow-hidden cursor-pointer active:scale-[0.98]"
                 >
                   {/* Accent bar */}
                   <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl" style={{ backgroundColor: accentColor }} />
@@ -298,14 +301,21 @@ export default function WalletsPage() {
                     </div>
                     <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                       <button
-                        onClick={() => { setEditWallet(wallet); setShowModal(true); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditWallet(wallet);
+                          setShowModal(true);
+                        }}
                         className="p-2.5 rounded-lg text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
                         title="Sửa ví"
                       >
                         <Edit2 size={16} />
                       </button>
                       <button
-                        onClick={() => setDeleteId(wallet.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteId(wallet.id);
+                        }}
                         className="p-2.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
                         title="Xóa ví"
                       >
@@ -315,13 +325,20 @@ export default function WalletsPage() {
                   </div>
 
                   <div className="mt-4">
-                    <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                      {maskValue(formatCurrency(wallet.balance, wallet.currency as Currency, false), 'NET_WORTH')}
-                    </p>
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                      <PrivacyMask 
+                        value={formatCurrency(wallet.balance, wallet.currency as Currency, false)} 
+                        category="NET_WORTH" 
+                      />
+                    </div>
                     {wallet.currency !== 'VND' && (
-                      <p className="text-[11px] font-medium text-indigo-500 mt-0.5">
-                        ≈ {maskValue(toVND(wallet.balance, wallet.currency as Currency).toLocaleString('en-US') + ' VND', 'NET_WORTH')}
-                      </p>
+                      <div className="text-[11px] font-medium text-indigo-500 mt-0.5">
+                        ≈ <PrivacyMask 
+                            value={toVND(wallet.balance, wallet.currency as Currency).toLocaleString('en-US') + ' VND'} 
+                            category="NET_WORTH" 
+                            showIcon={false}
+                          />
+                      </div>
                     )}
                   </div>
                 </div>
@@ -344,6 +361,16 @@ export default function WalletsPage() {
         open={showModal}
         onClose={() => { setShowModal(false); setEditWallet(null); }}
         editWallet={editWallet}
+      />
+
+      <WalletDetailModal
+        wallet={selectedWallet as any}
+        onClose={() => setSelectedWallet(null)}
+        onEdit={(w) => {
+          setEditWallet(w as any);
+          setShowModal(true);
+        }}
+        onDelete={(id) => setDeleteId(id)}
       />
 
       <DeleteConfirmModal

@@ -14,6 +14,7 @@ import { TrendingUp, TrendingDown, ArrowDownLeft, ArrowUpRight } from 'lucide-re
 import { useCashflowTrend } from '@/hooks/api/useAnalytics';
 import { formatCurrency } from '@/lib/exchangeRate';
 import { usePrivacy } from '@/context/PrivacyContext';
+import PrivacyMask from '../shared/PrivacyMask';
 
 const RANGES = [
   { label: '24H', value: '1D' },
@@ -38,7 +39,10 @@ export default function CashflowTrendChart() {
                 <ArrowDownLeft size={12} /> Thu nhập
               </span>
               <span className="font-bold text-slate-900 dark:text-white">
-                {maskValue(formatCurrency(payload[0].value, 'VND', true), 'INCOME')}
+                <PrivacyMask 
+                  value={formatCurrency(payload[0].value, 'VND', true)} 
+                  category="INCOME" 
+                />
               </span>
             </div>
             <div className="flex items-center justify-between gap-4">
@@ -46,13 +50,19 @@ export default function CashflowTrendChart() {
                 <ArrowUpRight size={12} /> Chi tiêu
               </span>
               <span className="font-bold text-slate-900 dark:text-white">
-                {maskValue(formatCurrency(payload[1].value, 'VND', true), 'EXPENSE')}
+                <PrivacyMask 
+                  value={formatCurrency(payload[1].value, 'VND', true)} 
+                  category="EXPENSE" 
+                />
               </span>
             </div>
             <div className="pt-1.5 mt-1.5 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between gap-4">
               <span className="text-slate-500 dark:text-slate-400 font-medium">Số dư</span>
               <span className={`font-bold ${payload[0].value - payload[1].value >= 0 ? 'text-indigo-500' : 'text-rose-500'}`}>
-                {maskValue(formatCurrency(payload[0].value - payload[1].value, 'VND', true), 'NET_WORTH')}
+                <PrivacyMask 
+                  value={formatCurrency(payload[0].value - payload[1].value, 'VND', true)} 
+                  category="NET_WORTH" 
+                />
               </span>
             </div>
           </div>

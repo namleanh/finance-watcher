@@ -45,14 +45,14 @@ export interface Transaction {
 export interface PortfolioAsset {
   id: string;
   name: string;
-  ticker: string;
+  ticker?: string;
   assetType: 'STOCK' | 'CRYPTO' | 'GOLD' | 'REAL_ESTATE' | 'OTHER';
   units: number;
   costBasis: number;       // per unit, in VND
   currentPrice: number;    // per unit, in VND
   currency: Currency;
-  purchaseDate: string;
-  notes: string;
+  purchaseDate?: string;
+  notes?: string;
   walletId?: string;
   walletName?: string;
   transactionId?: string;

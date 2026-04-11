@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePortfolioAssetDto, UpdatePortfolioAssetDto } from './dto/portfolio.dto';
+import { Prisma } from '@prisma/client';
 import { decryptField } from '../utils/crypto.util';
 import { convertCurrency } from '../utils/exchange.util';
 
@@ -38,9 +39,9 @@ export class PortfolioService {
   }
 
   async create(userId: string, dto: CreatePortfolioAssetDto) {
-    const costBasis = BigInt(Math.round(dto.costBasis));
+    const costBasis = dto.costBasis;
     const units = dto.units;
-    const totalCost = BigInt(Math.round(Number(units) * Number(costBasis)));
+    const totalCost = Number(units) * Number(costBasis);
     const purchaseDate = dto.purchaseDate ? new Date(dto.purchaseDate) : new Date();
     const rates = await this.getMarketRates();
 
@@ -58,12 +59,12 @@ export class PortfolioService {
         const assetCurrency = dto.currency || 'VND';
         const walletCurrency = wallet.currency || 'VND';
         
-        let balanceChange: bigint;
+        let balanceChange: number | string | Prisma.Decimal;
         if (assetCurrency === walletCurrency) {
           balanceChange = totalCost;
         } else {
           const converted = convertCurrency(Number(totalCost), assetCurrency, walletCurrency, rates);
-          balanceChange = BigInt(Math.round(converted));
+          balanceChange = converted;
         }
 
         if (wallet.balance < balanceChange) {
@@ -77,7 +78,7 @@ export class PortfolioService {
         });
 
         // Create audit transaction (amount is standard VND)
-        const amountInVND = BigInt(Math.round(convertCurrency(Number(totalCost), assetCurrency, 'VND', rates)));
+        const amountInVND = convertCurrency(Number(totalCost), assetCurrency, 'VND', rates);
 
         const transaction = await tx.transaction.create({
           data: {
@@ -104,7 +105,7 @@ export class PortfolioService {
           assetType: dto.assetType,
           units: dto.units,
           costBasis: costBasis,
-          currentPrice: BigInt(Math.round(dto.currentPrice)),
+          currentPrice: dto.currentPrice,
           currency: dto.currency || 'VND',
           purchaseDate: purchaseDate,
           notes: dto.notes,
@@ -130,8 +131,8 @@ export class PortfolioService {
         ticker: dto.ticker,
         assetType: dto.assetType,
         units: dto.units,
-        costBasis: dto.costBasis !== undefined ? BigInt(Math.round(dto.costBasis)) : undefined,
-        currentPrice: dto.currentPrice !== undefined ? BigInt(Math.round(dto.currentPrice)) : undefined,
+        costBasis: dto.costBasis !== undefined ? dto.costBasis : undefined,
+        currentPrice: dto.currentPrice !== undefined ? dto.currentPrice : undefined,
         currency: dto.currency,
         purchaseDate: dto.purchaseDate ? new Date(dto.purchaseDate) : undefined,
         notes: dto.notes,
@@ -156,12 +157,12 @@ export class PortfolioService {
 
         const totalCostInAssetCurrency = Number(asset.units) * Number(asset.costBasis);
         
-        let refundAmount: bigint;
+        let refundAmount: number | string | Prisma.Decimal;
         if (assetCurrency === walletCurrency) {
-          refundAmount = BigInt(Math.round(totalCostInAssetCurrency));
+          refundAmount = totalCostInAssetCurrency;
         } else {
           const converted = convertCurrency(totalCostInAssetCurrency, assetCurrency, walletCurrency, rates);
-          refundAmount = BigInt(Math.round(converted));
+          refundAmount = converted;
         }
 
         await tx.wallet.update({

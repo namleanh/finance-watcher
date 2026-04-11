@@ -26,7 +26,7 @@ export class RecurringService {
       data: {
         userId,
         type: dto.type,
-        amount: BigInt(Math.round(dto.amount)),
+        amount: dto.amount,
         originalCurrency: dto.originalCurrency,
         category: dto.category,
         subCategory: dto.subCategory,
@@ -44,7 +44,7 @@ export class RecurringService {
       where: { id },
       data: {
         type: dto.type,
-        amount: dto.amount !== undefined ? BigInt(Math.round(dto.amount)) : undefined,
+        amount: dto.amount !== undefined ? dto.amount : undefined,
         originalCurrency: dto.originalCurrency,
         category: dto.category,
         subCategory: dto.subCategory,

@@ -81,7 +81,7 @@ export class TransactionsService {
   }
 
   async create(userId: string, dto: CreateTransactionDto) {
-    const amount = BigInt(Math.round(dto.amount));
+    const amount = dto.amount;
     const rates = await this.getMarketRates();
     
     return await this.prisma.$transaction(async (tx) => {
@@ -90,7 +90,7 @@ export class TransactionsService {
           userId,
           type: dto.type,
           amount,
-          originalAmount: BigInt(Math.round(dto.originalAmount)),
+          originalAmount: dto.originalAmount,
           originalCurrency: dto.originalCurrency,
           category: encryptNote(dto.category, userId) || '',
           subCategory: encryptNote(dto.subCategory, userId) || null,
@@ -121,15 +121,15 @@ export class TransactionsService {
         }
 
         // Use originalAmount if currencies match, otherwise convert
-        let balanceChange: bigint;
+        let balanceChange: number | string | Prisma.Decimal;
         if (wallet.currency === dto.originalCurrency) {
-          balanceChange = BigInt(Math.round(dto.originalAmount));
+          balanceChange = dto.originalAmount;
         } else if (wallet.currency === 'VND') {
-          balanceChange = amount; // which is BigInt(Math.round(dto.amount))
+          balanceChange = amount; 
         } else {
           // Cross-currency conversion
           const converted = convertCurrency(dto.originalAmount, dto.originalCurrency, wallet.currency, rates);
-          balanceChange = BigInt(Math.round(converted));
+          balanceChange = converted;
         }
 
         // Strict Balance Check
@@ -140,7 +140,7 @@ export class TransactionsService {
 
         await tx.wallet.update({
           where: { id: dto.walletId },
-          data: { balance: { increment: isIncrement ? balanceChange : -balanceChange } },
+          data: { balance: isIncrement ? { increment: balanceChange } : { decrement: balanceChange } },
         });
       }
 
@@ -173,7 +173,7 @@ export class TransactionsService {
       // 4. Sync with Portfolio (Investment)
       if (dto.type?.toString().toUpperCase() === 'INVESTMENT' && dto.ticker) {
         const units = dto.units || 1;
-        const cbPerUnit = BigInt(Math.round(Number(amount) / units));
+        const cbPerUnit = Number(amount) / units;
         
         await tx.portfolioAsset.create({
           data: {
@@ -183,7 +183,7 @@ export class TransactionsService {
             assetType: dto.assetType || 'STOCK',
             units: units,
             costBasis: cbPerUnit,
-            currentPrice: dto.currentPrice ? BigInt(Math.round(dto.currentPrice)) : cbPerUnit,
+            currentPrice: dto.currentPrice ? dto.currentPrice : cbPerUnit,
             purchaseDate: new Date(dto.date),
             walletId: dto.walletId,
             transactionId: t.id,
@@ -200,7 +200,7 @@ export class TransactionsService {
     if (!oldT) throw new NotFoundException('Transaction not found');
     if (oldT.userId !== userId) throw new ForbiddenException();
 
-    const newAmount = dto.amount !== undefined ? BigInt(Math.round(dto.amount)) : oldT.amount;
+    const newAmount = dto.amount !== undefined ? dto.amount : oldT.amount;
     const newType = dto.type || oldT.type;
     const newWalletId = dto.walletId !== undefined ? dto.walletId : oldT.walletId;
     const newGoalId = dto.goalId !== undefined ? dto.goalId : oldT.goalId;
@@ -213,19 +213,19 @@ export class TransactionsService {
         const wallet = await tx.wallet.findUnique({ where: { id: oldT.walletId } });
         if (wallet) {
           const oldIsIncrement = oldT.type === 'INCOME';
-          let oldBalanceChange: bigint;
+          let oldBalanceChange: number | string | Prisma.Decimal;
           if (wallet.currency === oldT.originalCurrency) {
             oldBalanceChange = oldT.originalAmount;
           } else if (wallet.currency === 'VND') {
             oldBalanceChange = oldT.amount;
           } else {
             const converted = convertCurrency(Number(oldT.originalAmount), oldT.originalCurrency, wallet.currency, rates);
-            oldBalanceChange = BigInt(Math.round(converted));
+            oldBalanceChange = converted;
           }
 
           await tx.wallet.update({
             where: { id: oldT.walletId },
-            data: { balance: { increment: oldIsIncrement ? -oldBalanceChange : oldBalanceChange } },
+            data: { balance: oldIsIncrement ? { decrement: oldBalanceChange } : { increment: oldBalanceChange } },
           });
         }
       }
@@ -251,8 +251,8 @@ export class TransactionsService {
         where: { id },
         data: {
           type: dto.type,
-          amount: dto.amount !== undefined ? BigInt(Math.round(dto.amount)) : undefined,
-          originalAmount: dto.originalAmount !== undefined ? BigInt(Math.round(dto.originalAmount)) : undefined,
+          amount: dto.amount !== undefined ? dto.amount : undefined,
+          originalAmount: dto.originalAmount !== undefined ? dto.originalAmount : undefined,
           originalCurrency: dto.originalCurrency,
           category: dto.category !== undefined ? (encryptNote(dto.category, userId) || '') : undefined,
           subCategory: dto.subCategory !== undefined ? (encryptNote(dto.subCategory, userId) || null) : undefined,
@@ -274,9 +274,9 @@ export class TransactionsService {
         const wallet = await tx.wallet.findUnique({ where: { id: newWalletId } });
         if (wallet) {
           const newIsIncrement = newType === 'INCOME';
-          let newBalanceChange: bigint;
+          let newBalanceChange: number | string | Prisma.Decimal;
           if (wallet.currency === (dto.originalCurrency || oldT.originalCurrency)) {
-            newBalanceChange = newAmount === oldT.amount ? oldT.originalAmount : BigInt(Math.round(dto.originalAmount || Number(oldT.originalAmount)));
+            newBalanceChange = newAmount === oldT.amount ? oldT.originalAmount : (dto.originalAmount || Number(oldT.originalAmount));
           } else if (wallet.currency === 'VND') {
             newBalanceChange = newAmount;
           } else {
@@ -286,12 +286,12 @@ export class TransactionsService {
               wallet.currency,
               rates
             );
-            newBalanceChange = BigInt(Math.round(converted));
+            newBalanceChange = converted;
           }
 
           await tx.wallet.update({
             where: { id: newWalletId },
-            data: { balance: { increment: newIsIncrement ? newBalanceChange : -newBalanceChange } },
+            data: { balance: newIsIncrement ? { increment: newBalanceChange } : { decrement: newBalanceChange } },
           });
         }
       }
@@ -331,19 +331,19 @@ export class TransactionsService {
         const wallet = await tx.wallet.findUnique({ where: { id: t.walletId } });
         if (wallet) {
           const isIncrement = t.type === 'INCOME';
-          let balanceChange: bigint;
+          let balanceChange: number | string | Prisma.Decimal;
           if (wallet.currency === t.originalCurrency) {
             balanceChange = t.originalAmount;
           } else if (wallet.currency === 'VND') {
             balanceChange = t.amount;
           } else {
             const converted = convertCurrency(Number(t.originalAmount), t.originalCurrency, wallet.currency, rates);
-            balanceChange = BigInt(Math.round(converted));
+            balanceChange = converted;
           }
 
           await tx.wallet.update({
             where: { id: t.walletId },
-            data: { balance: { increment: isIncrement ? -balanceChange : balanceChange } },
+            data: { balance: isIncrement ? { decrement: balanceChange } : { increment: balanceChange } },
           });
         }
       }

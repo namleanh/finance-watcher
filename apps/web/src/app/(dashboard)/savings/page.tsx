@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Trash2, Banknote, TrendingUp, Clock, X, Landmark, Eye, EyeOff, PiggyBank } from 'lucide-react';
-import { useSavingsDeposits, useCreateSavingsDeposit, useDeleteSavingsDeposit, SavingsDeposit } from '@/hooks/api/useSavingsDeposits';
+import { Plus, Trash2, Banknote, TrendingUp, Clock, X, Landmark, PiggyBank } from 'lucide-react';
+import { useSavingsDeposits, useCreateSavingsDeposit, useDeleteSavingsDeposit, useWithdrawSavingsDeposit, SavingsDeposit } from '@/hooks/api/useSavingsDeposits';
 import { useWallets } from '@/hooks/api/useWallets';
 import { formatCurrency } from '@/lib/exchangeRate';
 import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
@@ -10,11 +10,14 @@ import { format, parseISO, isPast } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import Header from '@/components/layout/Header';
 import DeleteConfirmModal from '@/components/shared/DeleteConfirmModal';
+import WithdrawConfirmModal from '@/components/shared/WithdrawConfirmModal';
 import CurrencyInput from '@/components/shared/CurrencyInput';
 import { Currency } from '@/lib/types';
 import { usePrivacy } from '@/context/PrivacyContext';
+import PrivacyMask from '@/components/shared/PrivacyMask';
 import { StatCard } from '@/components/shared/StatCard';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import SavingsDetailModal from '@/components/shared/SavingsDetailModal';
 
 const TERM_OPTIONS = [
   { value: 1, label: '1 tháng' },
@@ -241,6 +244,9 @@ export default function SavingsDepositsPage() {
   const { toVND } = useCurrencyConverter();
   const [showModal, setShowModal] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [selectedDeposit, setSelectedDeposit] = useState<SavingsDeposit | null>(null);
+  const { mutate: withdrawDeposit, isPending: isWithdrawing } = useWithdrawSavingsDeposit();
+  const [withdrawId, setWithdrawId] = useState<string | null>(null);
   const { maskValue, isCategoryHidden, toggleCategory } = usePrivacy();
 
   const totalDeposited = deposits
@@ -284,13 +290,7 @@ export default function SavingsDepositsPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900 dark:text-white">Danh sách sổ tiết kiệm</h2>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => toggleCategory('SAVINGS_DETAILS')}
-              className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:text-indigo-500 transition-colors"
-              title={isCategoryHidden('SAVINGS_DETAILS') ? 'Hiện chi tiết' : 'Ẩn chi tiết'}
-            >
-              {isCategoryHidden('SAVINGS_DETAILS') ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
+
             <button
               onClick={() => setShowModal(true)}
               className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors shadow-sm"
@@ -343,7 +343,11 @@ export default function SavingsDepositsPage() {
                       const statusKey = isMatured ? 'MATURED' : d.status;
                       const { label, className } = STATUS_CONFIG[statusKey] || STATUS_CONFIG.ACTIVE;
                       return (
-                        <tr key={d.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors group">
+                        <tr 
+                          key={d.id} 
+                          onClick={() => setSelectedDeposit(d)}
+                          className="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors group cursor-pointer"
+                        >
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-500/10 flex items-center justify-center shrink-0">
@@ -356,7 +360,12 @@ export default function SavingsDepositsPage() {
                             </div>
                           </td>
                           <td className="px-4 py-4 text-right whitespace-nowrap">
-                            <span className="text-sm font-semibold text-slate-900 dark:text-white">{maskValue(formatCurrency(d.depositAmount, d.currency as Currency, false), 'SAVINGS_DETAILS')}</span>
+                            <div className="text-sm font-semibold text-slate-900 dark:text-white">
+                              <PrivacyMask 
+                                value={formatCurrency(d.depositAmount, d.currency as Currency, false)} 
+                                category="SAVINGS_DETAILS" 
+                              />
+                            </div>
                           </td>
                           <td className="px-4 py-4 text-center text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
                             {format(parseISO(d.depositDate), 'dd/MM/yyyy', { locale: vi })}
@@ -375,28 +384,31 @@ export default function SavingsDepositsPage() {
                             <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">{d.interestRate}%</span>
                           </td>
                           <td className="px-3 py-4 text-right whitespace-nowrap">
-                            <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                              +{maskValue(formatCurrency(d.interestEarned, d.currency as Currency, false), 'SAVINGS_DETAILS')}
-                            </span>
+                            <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                              +<PrivacyMask 
+                                value={formatCurrency(d.interestEarned, d.currency as Currency, false)} 
+                                category="SAVINGS_DETAILS" 
+                                showIcon={false}
+                              />
+                            </div>
                           </td>
                           <td className="px-5 py-4 text-center">
                             <span className={`text-[10px] font-medium px-2 py-1 rounded-lg ${className}`}>{label}</span>
                           </td>
                           <td className="px-5 py-4 text-right">
                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button
-                                disabled
-                                title="Rút tiết kiệm (sẽ hỗ trợ sau)"
-                                className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium border border-slate-200 dark:border-slate-600 text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-50"
-                              >
-                                Rút tiết kiệm
-                              </button>
-                              <button
-                                onClick={() => setDeleteId(d.id)}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
-                              >
-                                <Trash2 size={14} />
-                              </button>
+
+                              {d.status !== 'WITHDRAWN' && (
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setWithdrawId(d.id);
+                                  }} 
+                                  className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white text-[10px] font-bold transition-all uppercase tracking-tighter"
+                                >
+                                  Tất toán
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -413,7 +425,11 @@ export default function SavingsDepositsPage() {
                   const statusKey = isMatured ? 'MATURED' : d.status;
                   const { label, className } = STATUS_CONFIG[statusKey] || STATUS_CONFIG.ACTIVE;
                   return (
-                    <div key={d.id} className="p-4 space-y-3">
+                    <div 
+                      key={d.id} 
+                      onClick={() => setSelectedDeposit(d)}
+                      className="p-4 space-y-3 active:bg-slate-100 dark:active:bg-slate-800 transition-colors cursor-pointer"
+                    >
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-500/10 flex items-center justify-center shrink-0">
@@ -424,18 +440,30 @@ export default function SavingsDepositsPage() {
                             <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${className}`}>{label}</span>
                           </div>
                         </div>
-                        <button onClick={() => setDeleteId(d.id)} className="p-2.5 text-slate-400 hover:text-rose-500 transition-colors">
-                          <Trash2 size={16} />
-                        </button>
+                        {d.status !== 'WITHDRAWN' && (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setWithdrawId(d.id);
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 active:bg-emerald-500 active:text-white text-[10px] font-bold transition-all uppercase tracking-tighter"
+                          >
+                            Tất toán
+                          </button>
+                        )}
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3">
                           <p className="text-slate-400 mb-1">Số tiền gửi</p>
-                          <p className="font-bold text-sm text-slate-900 dark:text-white">{maskValue(formatCurrency(d.depositAmount, d.currency as Currency, false), 'SAVINGS_DETAILS')}</p>
+                          <div className="font-bold text-sm text-slate-900 dark:text-white">
+                            <PrivacyMask value={formatCurrency(d.depositAmount, d.currency as Currency, false)} category="SAVINGS_DETAILS" />
+                          </div>
                         </div>
                         <div className="bg-emerald-50 dark:bg-emerald-500/10 rounded-xl p-3">
                           <p className="text-slate-400 mb-1">Tiền lãi</p>
-                          <p className="font-bold text-sm text-emerald-600 dark:text-emerald-400">+{maskValue(formatCurrency(d.interestEarned, d.currency as Currency, false), 'SAVINGS_DETAILS')}</p>
+                          <div className="font-bold text-sm text-emerald-600 dark:text-emerald-400">
+                            +<PrivacyMask value={formatCurrency(d.interestEarned, d.currency as Currency, false)} category="SAVINGS_DETAILS" showIcon={false} />
+                          </div>
                         </div>
                         <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3">
                           <p className="text-slate-400 mb-1">Kỳ hạn / Lãi suất</p>
@@ -448,12 +476,7 @@ export default function SavingsDepositsPage() {
                           </p>
                         </div>
                       </div>
-                      <button
-                        disabled
-                        className="w-full py-2 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700 text-slate-400 cursor-not-allowed opacity-50"
-                      >
-                        Rút tiết kiệm (sẽ hỗ trợ sau)
-                      </button>
+
                     </div>
                   );
                 })}
@@ -464,6 +487,21 @@ export default function SavingsDepositsPage() {
       </div>
 
       <AddDepositModal open={showModal} onClose={() => setShowModal(false)} />
+
+      <SavingsDetailModal
+        deposit={selectedDeposit}
+        onClose={() => setSelectedDeposit(null)}
+        onDelete={(id) => setDeleteId(id)}
+        onWithdraw={(id) => setWithdrawId(id)}
+      />
+
+      <WithdrawConfirmModal
+        open={!!withdrawId}
+        onClose={() => setWithdrawId(null)}
+        onConfirm={() => { if (withdrawId) withdrawDeposit(withdrawId, { onSuccess: () => setWithdrawId(null) }); }}
+        isLoading={isWithdrawing}
+      />
+
       <DeleteConfirmModal
         open={!!deleteId}
         onClose={() => setDeleteId(null)}

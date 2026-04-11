@@ -26,8 +26,8 @@ export class GoalsService {
       data: {
         userId,
         name: dto.name,
-        targetAmount: BigInt(Math.round(dto.targetAmount)),
-        currentAmount: dto.currentAmount ? BigInt(Math.round(dto.currentAmount)) : BigInt(0),
+        targetAmount: dto.targetAmount,
+        currentAmount: dto.currentAmount ? dto.currentAmount : 0,
         deadline: dto.deadline ? new Date(dto.deadline) : null,
         color: dto.color,
         icon: dto.icon,
@@ -42,8 +42,8 @@ export class GoalsService {
       where: { id },
       data: {
         name: dto.name,
-        targetAmount: dto.targetAmount !== undefined ? BigInt(Math.round(dto.targetAmount)) : undefined,
-        currentAmount: dto.currentAmount !== undefined ? BigInt(Math.round(dto.currentAmount)) : undefined,
+        targetAmount: dto.targetAmount !== undefined ? dto.targetAmount : undefined,
+        currentAmount: dto.currentAmount !== undefined ? dto.currentAmount : undefined,
         deadline: dto.deadline ? new Date(dto.deadline) : undefined,
         color: dto.color,
         icon: dto.icon,
@@ -58,7 +58,7 @@ export class GoalsService {
     const g = await this.prisma.savingsGoal.update({
       where: { id },
       data: {
-        currentAmount: BigInt(Math.round(newAmount)),
+        currentAmount: newAmount,
         ...(newAmount >= goal.targetAmount ? { status: 'COMPLETED' } : {}),
       },
     });

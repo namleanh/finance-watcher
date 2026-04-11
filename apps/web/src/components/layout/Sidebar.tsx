@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useUser, useLogout } from '@/hooks/api/useAuth';
 
 const NAV_ITEMS = [
-  { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/', icon: LayoutDashboard, label: 'Tổng quan' },
   { href: '/transactions', icon: ArrowLeftRight, label: 'Giao dịch' },
   { href: '/wallets', icon: CreditCard, label: 'Ví tiền' },
   { href: '/savings', icon: Landmark, label: 'Tiết kiệm' },
@@ -122,7 +122,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all ${collapsed ? 'justify-center' : ''}`}
           >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-            {!collapsed && <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
+            {!collapsed && <span>{theme === 'dark' ? 'Chế độ sáng' : 'Chế độ tối'}</span>}
           </button>
         </div>
 

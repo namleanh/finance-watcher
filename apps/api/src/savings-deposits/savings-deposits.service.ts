@@ -34,7 +34,7 @@ export class SavingsDepositsService {
   }
 
   async create(userId: string, dto: CreateSavingsDepositDto) {
-    const depositAmount = BigInt(Math.round(dto.depositAmount));
+    const depositAmount = dto.depositAmount;
     const depositDate = new Date(dto.depositDate);
     const maturityDate = new Date(depositDate);
     maturityDate.setMonth(maturityDate.getMonth() + dto.termMonths);
@@ -95,7 +95,7 @@ export class SavingsDepositsService {
             userId,
             walletId: dto.walletId,
             type: 'SAVING',
-            amount: BigInt(Math.round(Number(depositAmount) * currentRate)),
+            amount: Number(depositAmount) * currentRate,
             originalAmount: depositAmount,
             originalCurrency: walletCurrency,
             category: encryptField('Tiết kiệm', userId) || 'Tiết kiệm',
@@ -126,7 +126,7 @@ export class SavingsDepositsService {
       data: {
         bankName: dto.bankName ? encryptField(dto.bankName, userId) : undefined,
         bankNameHash: dto.bankName ? generateBlindIndex(dto.bankName) : undefined,
-        depositAmount: dto.depositAmount !== undefined ? BigInt(Math.round(dto.depositAmount)) : undefined,
+        depositAmount: dto.depositAmount !== undefined ? dto.depositAmount : undefined,
         termMonths: dto.termMonths,
         interestRate: dto.interestRate,
         depositDate: dto.depositDate ? new Date(dto.depositDate) : undefined,
@@ -143,7 +143,7 @@ export class SavingsDepositsService {
     if (deposit.userId !== userId) throw new ForbiddenException();
 
     return this.prisma.$transaction(async (tx) => {
-      // If linked to a wallet, refund the balance
+      // If linked to a wallet, refund the balance (only if ACTIVE - mistake correction)
       if (deposit.walletId && deposit.status === 'ACTIVE') {
         await tx.wallet.update({
           where: { id: deposit.walletId },
@@ -158,6 +158,61 @@ export class SavingsDepositsService {
 
       await tx.savingsDeposit.delete({ where: { id } });
       return { message: 'Savings deposit deleted and related transactions handled' };
+    });
+  }
+
+  async withdraw(id: string, userId: string) {
+    const d = await this.prisma.savingsDeposit.findUnique({
+      where: { id },
+      include: { wallet: true },
+    });
+    if (!d) throw new NotFoundException('Savings deposit not found');
+    if (d.userId !== userId) throw new ForbiddenException();
+    if (d.status === 'WITHDRAWN') throw new BadRequestException('Sổ tiết kiệm này đã được tất toán');
+
+    // Calculate interest using the same logic as serialize
+    const depositAmount = Number(d.depositAmount);
+    const interestRate = Number(d.interestRate);
+    const termMonths = d.termMonths;
+    const interestEarned = Math.round(depositAmount * (interestRate / 100) * (termMonths / 12));
+    const totalRefund = depositAmount + interestEarned;
+
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Update wallet balance if target wallet exists
+      if (d.walletId) {
+        await tx.wallet.update({
+          where: { id: d.walletId },
+          data: { balance: { increment: totalRefund } },
+        });
+
+        // 2. Create an INCOME transaction for the interest
+        await tx.transaction.create({
+          data: {
+            userId,
+            walletId: d.walletId,
+            type: 'INCOME',
+            amount: interestEarned, // Stored in wallet currency/equivalent
+            originalAmount: interestEarned,
+            originalCurrency: d.currency || 'VND',
+            category: encryptField('Lãi tiết kiệm', userId) || 'Lãi tiết kiệm',
+            date: new Date(),
+            notes: encryptField(`Tất toán sổ: ${decryptField(d.bankName, userId)}`, userId) || `Tất toán sổ: ${decryptField(d.bankName, userId)}`,
+            savingsDepositId: id,
+          },
+        });
+      }
+
+      // 3. Update deposit status
+      const updated = await tx.savingsDeposit.update({
+        where: { id },
+        data: { status: 'WITHDRAWN' },
+        include: {
+          wallet: { select: { id: true, name: true } },
+          transactions: { select: { id: true } },
+        },
+      });
+
+      return this.serialize(updated);
     });
   }
 

@@ -47,7 +47,7 @@ export default function AddTransactionModal({ open, onClose }: Props) {
   const [currency, setCurrency] = useState<Currency>('VND');
   const [category, setCategory] = useState('');
   const [subCategory, setSubCategory] = useState('');
-  const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
   const [notes, setNotes] = useState('');
   const [walletId, setWalletId] = useState<string>('');
   const [goalId, setGoalId] = useState<string>('');
@@ -155,6 +155,16 @@ export default function AddTransactionModal({ open, onClose }: Props) {
         currentPrice: type === 'INVESTMENT' ? (toVND(parseFloat(currentPrice) || 0, currency)) : undefined,
       });
 
+      // Reset form for next use
+      setAmount('');
+      setNotes('');
+      setCategory('');
+      setSubCategory('');
+      setTicker('');
+      setUnits('');
+      setCurrentPrice('');
+      setDate(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
+      
       onClose();
     } catch (err) {
       console.error(err);
@@ -192,10 +202,10 @@ export default function AddTransactionModal({ open, onClose }: Props) {
             </div>
           </div>
 
-          {/* Amount */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {/* Amount & Currency */}
+          <div className="flex gap-4">
             <div className="flex-1 min-w-0 relative">
-              <label className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2 block">Số tiền</label>
+              <label className="text-xs font-medium text-slate-400 uppercase mb-2 block tracking-wider">Số tiền</label>
               <CurrencyInput
                 value={amount}
                 onChange={e => setAmount(e.target.value)}
@@ -203,7 +213,7 @@ export default function AddTransactionModal({ open, onClose }: Props) {
                 rate={getRate(currency)}
                 placeholder="0"
                 required
-                className={`w-full bg-white dark:bg-slate-800 border ${isInsufficient ? 'border-rose-300 dark:border-rose-500/30' : 'border-slate-200 dark:border-slate-700'} rounded-xl px-4 py-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all`}
+                className={`w-full bg-white dark:bg-slate-800 border ${isInsufficient ? 'border-rose-300 dark:border-rose-500/30' : 'border-slate-200 dark:border-slate-700'} rounded-xl px-4 py-3 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all`}
               />
               {isInsufficient && (
                 <div className="absolute top-0 right-2 -translate-y-1/2 z-10 animate-bounce pointer-events-none">
@@ -217,8 +227,8 @@ export default function AddTransactionModal({ open, onClose }: Props) {
                 </div>
               )}
             </div>
-            <div className="w-full sm:w-24">
-              <label className="text-xs font-medium text-slate-400 uppercase mb-2 block">Đơn vị</label>
+            <div className="w-32 shrink-0">
+              <label className="text-xs font-medium text-slate-400 uppercase mb-2 block tracking-wider">Đơn vị</label>
               <select 
                 value={currency} 
                 onChange={e => {
@@ -226,16 +236,14 @@ export default function AddTransactionModal({ open, onClose }: Props) {
                   setAmount('');
                   setCurrentPrice('');
                 }} 
-              className="w-full block bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all" 
+                className="w-full block bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all appearance-none cursor-pointer" 
               >
                 {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
               </select>
               {currency !== 'VND' && (
-                <div className="mt-1.5 px-1 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                  <p className="text-[10px] text-slate-400 font-medium">
-                    1 {currency} ≈ {getRate(currency).toLocaleString('en-US')} VND
-                  </p>
-                </div>
+                <p className="mt-1.5 text-[10px] text-slate-400/70 italic whitespace-nowrap text-right pr-1">
+                  1 {currency} ≈ {getRate(currency).toLocaleString('en-US')} VND
+                </p>
               )}
             </div>
           </div>
@@ -382,14 +390,26 @@ export default function AddTransactionModal({ open, onClose }: Props) {
             </div>
           )}
 
-          {/* Date */}
+          {/* Date & Time */}
           <div className="w-full">
-            <label className="text-xs font-medium text-slate-400 uppercase mb-2 block">Ngày</label>
+            <label className="text-xs font-medium text-slate-400 uppercase mb-2 block">Ngày & Giờ</label>
             <input 
-              type="date" 
+              type="datetime-local" 
               value={date} 
               onChange={e => setDate(e.target.value)} 
               className="w-full block bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all" 
+            />
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="text-xs font-medium text-slate-400 uppercase mb-2 block">Ghi chú</label>
+            <textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Nhập ghi chú (không bắt buộc)..."
+              rows={2}
+              className="w-full block bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm dark:text-white focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all resize-none"
             />
           </div>
 

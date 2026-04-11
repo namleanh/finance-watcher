@@ -57,3 +57,19 @@ export const useDeleteSavingsDeposit = () => {
     },
   });
 };
+
+export const useWithdrawSavingsDeposit = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.patch(`/savings-deposits/${id}/withdraw`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['savings-deposits'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['wallets'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
+    },
+  });
+};

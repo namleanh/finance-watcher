@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Trash2, Edit2, Plus, TrendingUp, TrendingDown, X, Eye, EyeOff, Banknote, Briefcase, PiggyBank, Landmark, LayoutGrid } from 'lucide-react';
+import { Trash2, Edit2, Plus, TrendingUp, TrendingDown, X, Banknote, Briefcase, PiggyBank, Landmark, LayoutGrid } from 'lucide-react';
 import { usePortfolioAssets, usePortfolioSummary, useCreatePortfolioAsset, useUpdatePortfolioAsset, useDeletePortfolioAsset, PortfolioAsset } from '@/hooks/api/usePortfolio';
 import { usePrivacy } from '@/context/PrivacyContext';
+import PrivacyMask from '@/components/shared/PrivacyMask';
+import PortfolioDetailModal from '@/components/shared/PortfolioDetailModal';
 import { StatCard } from '@/components/shared/StatCard';
 import { useWallets } from '@/hooks/api/useWallets';
 import { formatCurrency } from '@/lib/exchangeRate';
@@ -235,6 +237,7 @@ export default function PortfolioTable() {
   
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<PortfolioAsset | undefined>();
+  const [selectedAsset, setSelectedAsset] = useState<PortfolioAsset | null>(null);
   const { maskValue, isCategoryHidden, toggleCategory } = usePrivacy();
 
   if (isLoading) {
@@ -277,13 +280,7 @@ export default function PortfolioTable() {
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700/50">
           <h3 className="font-semibold text-slate-900 dark:text-white">Danh mục đầu tư</h3>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => toggleCategory('INVESTMENT_DETAILS')}
-              className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:text-indigo-500 transition-colors"
-              title={isCategoryHidden('INVESTMENT_DETAILS') ? 'Hiện chi tiết' : 'Ẩn chi tiết'}
-            >
-              {isCategoryHidden('INVESTMENT_DETAILS') ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
+
             <button
               onClick={() => { setEditing(undefined); setShowModal(true); }}
               className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold transition-all"
@@ -306,11 +303,11 @@ export default function PortfolioTable() {
                 <thead>
                   <tr className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700/50">
                     <th className="px-4 py-3 text-left">Tài sản</th>
-                    <th className="px-4 py-3 text-right">SL</th>
+                    <th className="px-4 py-3 text-right">Số lượng</th>
                     <th className="px-4 py-3 text-right">Giá vốn</th>
                     <th className="px-4 py-3 text-right">Giá hiện tại</th>
                     <th className="px-4 py-3 text-right">Thị giá</th>
-                    <th className="px-4 py-3 text-right">P&L</th>
+                    <th className="px-4 py-3 text-right">Lãi/Lỗ</th>
                     <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
@@ -321,7 +318,11 @@ export default function PortfolioTable() {
                     const pnl = value - cost;
                     const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
                     return (
-                      <tr key={a.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors group">
+                      <tr 
+                        key={a.id} 
+                        onClick={() => setSelectedAsset(a)}
+                        className="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors group cursor-pointer"
+                      >
                         <td className="px-4 py-3">
                           <div>
                             <p className="text-sm font-semibold text-slate-900 dark:text-white">{a.name}</p>
@@ -329,26 +330,45 @@ export default function PortfolioTable() {
                           </div>
                         </td>
                         <td className="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-300">{a.units.toLocaleString('en-US')}</td>
-                        <td className="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-300">{maskValue(formatCurrency(a.costBasis, a.currency as Currency), 'INVESTMENT_DETAILS')}</td>
-                        <td className="px-4 py-3 text-right text-sm text-slate-900 dark:text-slate-200 font-medium">{maskValue(formatCurrency(a.currentPrice, a.currency as Currency), 'INVESTMENT_DETAILS')}</td>
-                        <td className="px-4 py-3 text-right text-sm text-indigo-600 dark:text-indigo-400 font-semibold">{maskValue(formatCurrency(value, a.currency as Currency, false), 'INVESTMENT_DETAILS')}</td>
+                        <td className="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-300">
+                          <PrivacyMask value={formatCurrency(a.costBasis, a.currency as Currency)} category="INVESTMENT_DETAILS" />
+                        </td>
+                        <td className="px-4 py-3 text-right text-sm text-slate-900 dark:text-slate-200 font-medium">
+                          <PrivacyMask value={formatCurrency(a.currentPrice, a.currency as Currency)} category="INVESTMENT_DETAILS" />
+                        </td>
+                        <td className="px-4 py-3 text-right text-sm text-indigo-600 dark:text-indigo-400 font-semibold">
+                          <PrivacyMask value={formatCurrency(value, a.currency as Currency, false)} category="INVESTMENT_DETAILS" />
+                        </td>
                         <td className="px-4 py-3 text-right">
                           <div className={`flex items-center justify-end gap-1 ${pnl >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
                             {pnl >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                             <span className="text-xs font-semibold">{pnl >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%</span>
                           </div>
                           <p className={`text-[10px] text-right ${pnl >= 0 ? 'text-emerald-500/70 dark:text-emerald-400/70' : 'text-rose-500/70 dark:text-rose-400/70'}`}>
-                            {pnl >= 0 ? '+' : ''}{maskValue(formatCurrency(Math.abs(pnl), a.currency as Currency, false), 'INVESTMENT_DETAILS')}
+                            {pnl >= 0 ? '+' : ''}
+                            <PrivacyMask value={formatCurrency(Math.abs(pnl), a.currency as Currency, false)} category="INVESTMENT_DETAILS" showIcon={false} />
                           </p>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all text-right justify-end">
-                            <button onClick={() => { setEditing(a); setShowModal(true); }} className="p-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"><Edit2 size={14} /></button>
                             <button 
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditing(a);
+                                setShowModal(true);
+                              }} 
+                              className="p-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 if (confirm('Bạn có chắc muốn xóa tài sản này?')) deleteAsset(a.id);
                               }} 
-                              className="p-2 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"><Trash2 size={14} />
+                              className="p-2 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
+                            >
+                              <Trash2 size={14} />
                             </button>
                           </div>
                         </td>
@@ -367,7 +387,11 @@ export default function PortfolioTable() {
                 const pnl = value - cost;
                 const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
                 return (
-                  <div key={a.id} className="p-4 space-y-3 hover:bg-slate-50 dark:hover:bg-slate-700/20 active:bg-slate-100 dark:active:bg-slate-700/40 transition-colors">
+                  <div 
+                    key={a.id} 
+                    onClick={() => setSelectedAsset(a)}
+                    className="p-4 space-y-3 hover:bg-slate-50 dark:hover:bg-slate-700/20 active:bg-slate-100 dark:active:bg-slate-700/40 transition-colors cursor-pointer"
+                  >
                     <div className="flex items-start justify-between">
                       <div className="min-w-0">
                         <h4 className="font-bold text-slate-900 dark:text-white truncate">{a.name}</h4>
@@ -377,12 +401,24 @@ export default function PortfolioTable() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <button onClick={() => { setEditing(a); setShowModal(true); }} className="p-2.5 text-slate-400 hover:text-indigo-500"><Edit2 size={18} /></button>
                         <button 
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditing(a);
+                            setShowModal(true);
+                          }} 
+                          className="p-2.5 text-slate-400 hover:text-indigo-500"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
                             if (confirm('Bạn có chắc muốn xóa tài sản này?')) deleteAsset(a.id);
                           }} 
-                          className="p-2.5 text-slate-400 hover:text-rose-500"><Trash2 size={18} />
+                          className="p-2.5 text-slate-400 hover:text-rose-500"
+                        >
+                          <Trash2 size={18} />
                         </button>
                       </div>
                     </div>
@@ -390,8 +426,12 @@ export default function PortfolioTable() {
                     <div className="grid grid-cols-2 gap-4 pt-1">
                       <div>
                         <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Thị giá</p>
-                        <p className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{maskValue(formatCurrency(value, a.currency as Currency, false), 'INVESTMENT_DETAILS')}</p>
-                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Giá: {maskValue(formatCurrency(a.currentPrice, a.currency as Currency), 'INVESTMENT_DETAILS')}</p>
+                        <div className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                          <PrivacyMask value={formatCurrency(value, a.currency as Currency, false)} category="INVESTMENT_DETAILS" />
+                        </div>
+                        <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+                          Giá: <PrivacyMask value={formatCurrency(a.currentPrice, a.currency as Currency)} category="INVESTMENT_DETAILS" showIcon={false} />
+                        </div>
                       </div>
                       <div className="text-right">
                         <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Lãi / Lỗ</p>
@@ -399,7 +439,8 @@ export default function PortfolioTable() {
                           {pnl >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%
                         </div>
                         <p className={`text-[10px] font-medium mt-0.5 ${pnl >= 0 ? 'text-emerald-500/70 dark:text-emerald-400/70' : 'text-rose-500/70 dark:text-rose-400/70'}`}>
-                          {pnl >= 0 ? '+' : ''}{maskValue(formatCurrency(Math.abs(pnl), a.currency as Currency, false), 'INVESTMENT_DETAILS')}
+                          {pnl >= 0 ? '+' : ''}
+                          <PrivacyMask value={formatCurrency(Math.abs(pnl), a.currency as Currency, false)} category="INVESTMENT_DETAILS" showIcon={false} />
                         </p>
                       </div>
                     </div>
@@ -414,6 +455,18 @@ export default function PortfolioTable() {
       {showModal && (
         <AddAssetModal open={showModal} onClose={() => setShowModal(false)} editing={editing} />
       )}
+
+      <PortfolioDetailModal
+        asset={selectedAsset}
+        onClose={() => setSelectedAsset(null)}
+        onEdit={(asset) => {
+          setEditing(asset);
+          setShowModal(true);
+        }}
+        onDelete={(id) => {
+          if (confirm('Bạn có chắc muốn xóa tài sản này?')) deleteAsset(id);
+        }}
+      />
     </div>
   );
 }

@@ -47,6 +47,7 @@ export default function OverviewCards() {
         gradient="bg-gradient-to-br from-emerald-500 to-teal-600"
         sub={`Tiến độ mục tiêu: ${stats.savingPercent.toFixed(0)}%`}
         privacyCategory="SAVINGS"
+        href="/savings"
       />
       <StatCard
         title="Danh mục đầu tư"
@@ -54,6 +55,7 @@ export default function OverviewCards() {
         icon={<Briefcase size={20} />}
         gradient="bg-gradient-to-br from-amber-500 to-orange-600"
         privacyCategory="INVESTMENTS"
+        href="/portfolio"
       />
     </div>
   );

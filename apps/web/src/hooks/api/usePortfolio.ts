@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/apiClient';
+import { Currency } from '@/lib/types';
 
 export interface PortfolioAsset {
   id: string;
@@ -9,7 +10,7 @@ export interface PortfolioAsset {
   units: number;
   costBasis: number;
   currentPrice: number;
-  currency: string;
+  currency: Currency;
   purchaseDate?: string;
   notes?: string;
   walletId?: string;

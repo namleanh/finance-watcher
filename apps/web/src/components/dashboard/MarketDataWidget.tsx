@@ -330,7 +330,7 @@ export default function MarketDataWidget() {
                       </div>
                       <div>
                         <span className="text-[15px] font-bold text-slate-300 group-hover:text-white block">{item.label}</span>
-                        <span className="text-[10px] text-slate-500 uppercase tracking-widest">{item.type}</span>
+                        <span className="text-[10px] text-slate-500 uppercase tracking-widest">{item.type === 'GOLD' ? 'Vàng' : 'Ngoại tệ'}</span>
                       </div>
                     </div>
                     <Plus size={18} className="text-slate-600 group-hover:text-indigo-400" />

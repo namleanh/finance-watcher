@@ -1,14 +1,16 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Trash2, Filter, Search, ChevronLeft, ChevronRight, CreditCard, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Trash2, Filter, Search, ChevronLeft, ChevronRight, CreditCard, Loader2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useInfiniteTransactions, useDeleteTransaction } from '@/hooks/api/useTransactions';
 import { CATEGORIES } from '@/lib/constants';
 import { formatCurrency } from '@/lib/exchangeRate';
 import DeleteConfirmModal from '@/components/shared/DeleteConfirmModal';
+import TransactionDetailModal from '@/components/shared/TransactionDetailModal';
 import { usePrivacy, PrivacyCategory } from '@/context/PrivacyContext';
+import PrivacyMask from '@/components/shared/PrivacyMask';
 
 const TYPE_COLORS: Record<string, string> = {
   INCOME: 'text-emerald-400 bg-emerald-400/10',
@@ -33,6 +35,7 @@ export default function TransactionTable() {
   const [dateTo, setDateTo] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [selectedTx, setSelectedTx] = useState<any | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const { 
@@ -124,18 +127,7 @@ export default function TransactionTable() {
             <span className="hidden sm:inline">Lọc</span>
           </button>
           
-          <button
-            onClick={() => {
-              const hide = !isCategoryHidden('INCOME');
-              toggleCategory('INCOME');
-              toggleCategory('SAVINGS');
-              toggleCategory('INVESTMENTS');
-            }}
-            className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:text-indigo-500 transition-colors"
-            title={isCategoryHidden('INCOME') ? 'Hiện số liệu' : 'Ẩn số liệu'}
-          >
-            {isCategoryHidden('INCOME') ? <EyeOff size={16} /> : <Eye size={16} />}
-          </button>
+
         </div>
 
         {showFilters && (
@@ -188,7 +180,7 @@ export default function TransactionTable() {
             <CreditCard size={28} className="text-slate-300 dark:text-slate-600" />
           </div>
           <p className="font-bold text-slate-900 dark:text-slate-100 italic">Không tìm thấy giao dịch nào</p>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Vui lòng thử điều chỉnh bộ lọc của bạn</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Vui lòng thử điều chỉnh bộ lọc hoặc tìm kiếm tên danh mục/ghi chú</p>
         </div>
       ) : (
         <>
@@ -197,8 +189,8 @@ export default function TransactionTable() {
             <table className="w-full">
               <thead>
                 <tr className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700/50">
-                  <th className="px-4 py-3 text-left">Ngày</th>
-                  <th className="px-4 py-3 text-left">Loại</th>
+                  <th className="px-4 py-3 text-left">Ngày thực hiện</th>
+                  <th className="px-4 py-3 text-left">Loại giao dịch</th>
                   <th className="px-4 py-3 text-left">Danh mục</th>
                   <th className="px-4 py-3 text-left">Ghi chú</th>
                   <th className="px-4 py-3 text-right">Số tiền</th>
@@ -207,9 +199,16 @@ export default function TransactionTable() {
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-700/30">
                 {filtered.map((t: any) => (
-                  <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors group">
+                  <tr 
+                    key={t.id} 
+                    onClick={() => setSelectedTx(t)}
+                    className="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors group cursor-pointer"
+                  >
                     <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                      {format(parseISO(t.date), 'dd/MM/yyyy', { locale: vi })}
+                      <div className="flex flex-col">
+                        <span>{format(parseISO(t.date), 'dd/MM/yyyy', { locale: vi })}</span>
+                        <span className="text-[10px] opacity-50">{format(parseISO(t.date), 'HH:mm')}</span>
+                      </div>
                       {t.recurringId && <span className="ml-1.5 text-[9px] bg-indigo-100 text-indigo-600 dark:bg-indigo-600/20 dark:text-indigo-400 rounded px-1 py-0.5">↻</span>}
                     </td>
                     <td className="px-4 py-3">
@@ -254,15 +253,28 @@ export default function TransactionTable() {
                     </td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
                       <span className={`text-sm font-semibold ${t.type === 'INCOME' ? 'text-emerald-500 dark:text-emerald-400' : t.type === 'EXPENSE' ? 'text-rose-500 dark:text-rose-400' : 'text-slate-900 dark:text-slate-200'}`}>
-                        {t.type === 'EXPENSE' ? '-' : '+'}{maskValue(formatCurrency(t.originalAmount, t.originalCurrency, false), (t.type === 'INVESTMENT' ? 'INVESTMENTS' : t.type === 'SAVING' ? 'SAVINGS' : t.type) as PrivacyCategory)}
+                        {t.type === 'EXPENSE' ? '-' : '+'}
+                        <PrivacyMask 
+                          value={formatCurrency(t.originalAmount, t.originalCurrency, false)} 
+                          category={(t.type === 'INVESTMENT' ? 'INVESTMENTS' : t.type === 'SAVING' ? 'SAVINGS' : t.type) as PrivacyCategory} 
+                        />
                       </span>
                       {t.originalCurrency !== 'VND' && (
-                        <p className="text-[10px] text-slate-500">{maskValue(formatCurrency(t.amount, 'VND', false), (t.type === 'INVESTMENT' ? 'INVESTMENTS' : t.type === 'SAVING' ? 'SAVINGS' : t.type) as PrivacyCategory)}</p>
+                        <div className="text-[10px] text-slate-500">
+                          <PrivacyMask 
+                            value={formatCurrency(t.amount, 'VND', false)} 
+                            category={(t.type === 'INVESTMENT' ? 'INVESTMENTS' : t.type === 'SAVING' ? 'SAVINGS' : t.type) as PrivacyCategory} 
+                            showIcon={false}
+                          />
+                        </div>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button
-                        onClick={() => setDeleteId(t.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteId(t.id);
+                        }}
                         className="text-slate-400 hover:text-rose-500 transition-all p-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20"
                         title="Xóa giao dịch"
                       >
@@ -278,7 +290,11 @@ export default function TransactionTable() {
           {/* Mobile List View */}
           <div className="md:hidden divide-y divide-slate-200 dark:divide-slate-700/30">
             {filtered.map((t: any) => (
-              <div key={t.id} className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/20 active:bg-slate-100 dark:active:bg-slate-700/40 transition-colors">
+              <div 
+                key={t.id} 
+                onClick={() => setSelectedTx(t)}
+                className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/20 active:bg-slate-100 dark:active:bg-slate-700/40 transition-colors cursor-pointer"
+              >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" 
                     style={{ backgroundColor: `${getCatColor(t.category)}20`, color: getCatColor(t.category) }}>
@@ -289,7 +305,7 @@ export default function TransactionTable() {
                       {(t.type === 'SAVING' && t.depositBankName) ? t.depositBankName : t.category}
                     </p>
                     <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                      {format(parseISO(t.date), 'dd/MM/yyyy', { locale: vi })}
+                      {format(parseISO(t.date), 'dd/MM/yyyy HH:mm', { locale: vi })}
                       {t.subCategory && ` • ${t.subCategory}`}
                       {t.notes && ` • ${t.notes}`}
                     </p>
@@ -297,15 +313,22 @@ export default function TransactionTable() {
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   <div className="text-right">
-                    <p className={`text-sm font-bold ${t.type === 'INCOME' ? 'text-emerald-500' : t.type === 'EXPENSE' ? 'text-rose-500' : 'dark:text-white'}`}>
-                      {t.type === 'EXPENSE' ? '-' : '+'}{maskValue(formatCurrency(t.originalAmount, t.originalCurrency, false), (t.type === 'INVESTMENT' ? 'INVESTMENTS' : t.type === 'SAVING' ? 'SAVINGS' : t.type) as PrivacyCategory)}
-                    </p>
+                    <div className={`text-sm font-bold ${t.type === 'INCOME' ? 'text-emerald-500' : t.type === 'EXPENSE' ? 'text-rose-500' : 'dark:text-white'}`}>
+                      {t.type === 'EXPENSE' ? '-' : '+'}
+                      <PrivacyMask 
+                        value={formatCurrency(t.originalAmount, t.originalCurrency, false)} 
+                        category={(t.type === 'INVESTMENT' ? 'INVESTMENTS' : t.type === 'SAVING' ? 'SAVINGS' : t.type) as PrivacyCategory} 
+                      />
+                    </div>
                     <p className={`text-[10px] font-medium opacity-80 mt-0.5 ${TYPE_COLORS[t.type]?.split(' ')[0] || 'text-slate-500'}`}>
                       {TYPE_LABELS[t.type]}
                     </p>
                   </div>
                     <button
-                      onClick={() => setDeleteId(t.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteId(t.id);
+                      }}
                       className="p-2.5 text-slate-400 hover:text-rose-500 transition-colors"
                     >
                       <Trash2 size={16} />
@@ -323,13 +346,19 @@ export default function TransactionTable() {
                   <span className="text-xs">Đang tải thêm...</span>
                 </div>
               ) : hasNextPage ? (
-                <span className="text-[10px] text-slate-400">Cuộn để xem thêm</span>
+                <span className="text-[10px] text-slate-400 font-medium">Cuộn xuống để xem thêm</span>
               ) : transactions.length > 0 ? (
                 <span className="text-[10px] text-slate-400">Đã hiển thị tất cả {totalTransactions} giao dịch</span>
               ) : null}
             </div>
         </>
       )}
+
+      <TransactionDetailModal
+        transaction={selectedTx}
+        onClose={() => setSelectedTx(null)}
+        onDelete={(id) => setDeleteId(id)}
+      />
 
       <DeleteConfirmModal
         open={!!deleteId}
