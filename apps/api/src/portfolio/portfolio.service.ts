@@ -67,7 +67,7 @@ export class PortfolioService {
           balanceChange = converted;
         }
 
-        if (wallet.balance < balanceChange) {
+        if (wallet.balance.lt(balanceChange as any)) {
           throw new BadRequestException(`Số dư ví không đủ (Cần: ${Number(balanceChange).toLocaleString('en-US')} ${walletCurrency})`);
         }
 

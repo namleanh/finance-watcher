@@ -49,7 +49,7 @@ export class SavingsDepositsService {
         if (!wallet || wallet.userId !== userId) {
           throw new ForbiddenException('Wallet not found or access denied');
         }
-        if (wallet.balance < depositAmount) {
+        if (wallet.balance.lt(depositAmount)) {
           throw new BadRequestException('Số dư ví không đủ để thực hiện khoản tiết kiệm này');
         }
         walletCurrency = wallet.currency || 'VND';

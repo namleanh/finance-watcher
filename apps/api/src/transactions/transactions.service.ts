@@ -133,7 +133,7 @@ export class TransactionsService {
         }
 
         // Strict Balance Check
-        if (!isIncrement && wallet.balance < balanceChange) {
+        if (!isIncrement && wallet.balance.lt(balanceChange as any)) {
           const balanceStr = `${Number(wallet.balance).toLocaleString('en-US')} ${wallet.currency}`;
           throw new BadRequestException(`Số dư ví không đủ (Hiện có: ${balanceStr})`);
         }
