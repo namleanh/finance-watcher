@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
-import { RegisterDto, LoginDto, ForgotPasswordDto, ResetPasswordDto, ResendVerificationDto } from './dto/auth.dto';
+import { RegisterDto, LoginDto, ForgotPasswordDto, ResetPasswordDto, ResendVerificationDto, UpdateProfileDto } from './dto/auth.dto';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { MailService } from '../mail/mail.service';
@@ -257,6 +257,43 @@ export class AuthService {
       baseCurrency: user.baseCurrency,
       createdAt: user.createdAt,
     };
+  }
+
+  // ── Update profile ────────────────────────────────────────
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const data: any = {};
+    
+    if (dto.username) {
+      const usernameHash = generateBlindIndex(dto.username);
+      // Check if new username is taken by someone else
+      const existing = await this.prisma.user.findFirst({
+        where: { 
+          usernameHash,
+          id: { not: userId }
+        }
+      });
+      if (existing) throw new ConflictException('Username đã được sử dụng');
+      
+      data.usernameHash = usernameHash;
+      data.username = encryptField(dto.username.toLowerCase(), userId);
+    }
+
+    if (dto.displayName) {
+      data.displayName = encryptField(dto.displayName, userId);
+    }
+
+    if (dto.baseCurrency) {
+      data.baseCurrency = dto.baseCurrency;
+    }
+
+    if (Object.keys(data).length === 0) return { message: 'Không có thông tin thay đổi' };
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data,
+    });
+
+    return { message: 'Cập nhật thông tin thành công' };
   }
 
   // ── Helper ────────────────────────────────────────────────

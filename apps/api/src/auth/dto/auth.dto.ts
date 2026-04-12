@@ -51,3 +51,22 @@ export class ResendVerificationDto {
   @IsString()
   email: string;
 }
+
+export class UpdateProfileDto {
+  @IsString()
+  @IsOptional()
+  @MinLength(3)
+  @MaxLength(20)
+  @Matches(/^[a-zA-Z0-9_]+$/, { message: 'Username can only contain letters, numbers and underscores' })
+  username?: string;
+
+  @IsString()
+  @IsOptional()
+  @MinLength(1)
+  @MaxLength(50)
+  displayName?: string;
+
+  @IsString()
+  @IsOptional()
+  baseCurrency?: string;
+}

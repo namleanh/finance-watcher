@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import Header from '@/components/layout/Header';
 import OverviewCards from '@/components/dashboard/OverviewCards';
-import MarketDataWidget from '@/components/dashboard/MarketDataWidget';
 import SpendingPieChart from '@/components/dashboard/SpendingPieChart';
 import CashflowTrendChart from '@/components/dashboard/CashflowTrendChart';
 import TransactionTable from '@/components/transactions/TransactionTable';
@@ -15,8 +14,7 @@ export default function DashboardPage() {
 
   return (
     <div className="relative min-h-full pb-32">
-      <Header title="Dashboard" subtitle="Tổng quan tài chính của bạn" />
-      <MarketDataWidget />
+      <Header title="Tổng quan tài chính" />
 
       <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-8">
         <OverviewCards />

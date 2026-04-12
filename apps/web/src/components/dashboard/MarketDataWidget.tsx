@@ -68,6 +68,21 @@ export default function MarketDataWidget() {
     }
   }, [calculatorOptions, calcPrice]);
 
+  // Auto-collapse on scroll
+  useEffect(() => {
+    const mainContent = document.getElementById('main-content');
+    if (!mainContent || !isExpanded) return;
+
+    const handleScroll = () => {
+      if (mainContent.scrollTop > 50) {
+        setIsExpanded(false);
+      }
+    };
+
+    mainContent.addEventListener('scroll', handleScroll, { passive: true });
+    return () => mainContent.removeEventListener('scroll', handleScroll);
+  }, [isExpanded]);
+
   if (isLoading) return (
     <div className="bg-slate-950/40 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-8 flex items-center justify-center min-h-[140px]">
       <div className="flex flex-col items-center gap-4">

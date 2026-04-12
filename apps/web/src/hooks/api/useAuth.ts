@@ -114,3 +114,17 @@ export const useResetPassword = () => {
     },
   });
 };
+
+export const useUpdateProfile = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (payload: { username?: string; displayName?: string; baseCurrency?: string }) => {
+      const { data } = await apiClient.patch('/auth/profile', payload);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+    },
+  });
+};

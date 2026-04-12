@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Trash2, Filter, Search, ChevronLeft, ChevronRight, CreditCard, Loader2 } from 'lucide-react';
+import { Trash2, Filter, Search, ChevronLeft, ChevronRight, CreditCard, Loader2, Eye, EyeOff } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useInfiniteTransactions, useDeleteTransaction } from '@/hooks/api/useTransactions';
@@ -11,6 +11,7 @@ import DeleteConfirmModal from '@/components/shared/DeleteConfirmModal';
 import TransactionDetailModal from '@/components/shared/TransactionDetailModal';
 import { usePrivacy, PrivacyCategory } from '@/context/PrivacyContext';
 import PrivacyMask from '@/components/shared/PrivacyMask';
+import { Currency } from '@/lib/types';
 
 const TYPE_COLORS: Record<string, string> = {
   INCOME: 'text-emerald-400 bg-emerald-400/10',
@@ -27,7 +28,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default function TransactionTable() {
-  const { maskValue, isCategoryHidden, toggleCategory } = usePrivacy();
+  const { isCategoryHidden, toggleCategory, toggleIdVisibility, isIdVisible } = usePrivacy();
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterCat, setFilterCat] = useState('');
@@ -46,10 +47,10 @@ export default function TransactionTable() {
     isLoading 
   } = useInfiniteTransactions({
     limit: 20,
-    ...(filterType !== 'all' && { type: filterType }),
-    ...(filterCat && { category: filterCat }),
-    ...(dateFrom && { startDate: dateFrom }),
-    ...(dateTo && { endDate: dateTo }),
+    ...(showFilters && filterType !== 'all' && { type: filterType }),
+    ...(showFilters && filterCat && { category: filterCat }),
+    ...(showFilters && dateFrom && { startDate: dateFrom }),
+    ...(showFilters && dateTo && { endDate: dateTo }),
   });
 
   // Intersection Observer for Infinite Scroll
@@ -88,17 +89,28 @@ export default function TransactionTable() {
 
   // Local text search
   const filtered = useMemo(() => {
-    if (!search) return transactions;
+    if (!showFilters || !search) return transactions;
     return transactions.filter((t: any) => 
       t.category.toLowerCase().includes(search.toLowerCase()) || 
       (t.notes || '').toLowerCase().includes(search.toLowerCase())
     );
-  }, [transactions, search]);
+  }, [transactions, search, showFilters]);
 
-  const allCategories = CATEGORIES
-    .filter(c => c.type === 'INCOME' || c.type === 'EXPENSE')
-    .map(c => c.label)
-    .sort();
+  const allCategories = useMemo(() => {
+    return Array.from(new Set(
+      CATEGORIES
+        .filter(c => {
+          if (filterType === 'all') return c.type === 'INCOME' || c.type === 'EXPENSE';
+          return c.type === filterType;
+        })
+        .map(c => c.label)
+    )).sort();
+  }, [filterType]);
+
+  // Reset category when type changes
+  useEffect(() => {
+    setFilterCat('');
+  }, [filterType]);
 
   const getCatColor = (cat: string) => {
     return CATEGORIES.find(c => c.label === cat)?.color ?? '#64748b';
@@ -121,13 +133,23 @@ export default function TransactionTable() {
           </div>
           <button
             onClick={() => setShowFilters(f => !f)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm border transition-all ${showFilters ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600'}`}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm border transition-all ${showFilters ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50'}`}
           >
             <Filter size={14} />
             <span className="hidden sm:inline">Lọc</span>
           </button>
-          
-
+          <button
+            onClick={() => {
+              toggleCategory('INCOME_DETAILS');
+              toggleCategory('EXPENSE_DETAILS');
+              toggleCategory('SAVINGS_DETAILS');
+              toggleCategory('INVESTMENT_DETAILS');
+            }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm border transition-all ${!isCategoryHidden('EXPENSE_DETAILS') ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-500/20' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50'}`}
+          >
+            {isCategoryHidden('EXPENSE_DETAILS') ? <Eye size={14} /> : <EyeOff size={14} />}
+            <span className="hidden sm:inline">{isCategoryHidden('EXPENSE_DETAILS') ? 'Hiện' : 'Ẩn'}</span>
+          </button>
         </div>
 
         {showFilters && (
@@ -251,35 +273,49 @@ export default function TransactionTable() {
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right whitespace-nowrap">
-                      <span className={`text-sm font-semibold ${t.type === 'INCOME' ? 'text-emerald-500 dark:text-emerald-400' : t.type === 'EXPENSE' ? 'text-rose-500 dark:text-rose-400' : 'text-slate-900 dark:text-slate-200'}`}>
-                        {t.type === 'EXPENSE' ? '-' : '+'}
+                    <td className="px-3 py-4 text-right whitespace-nowrap">
+                      <div className={`text-sm font-bold ${t.type === 'INCOME' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                        {t.type === 'INCOME' ? '+' : '-'}
                         <PrivacyMask 
-                          value={formatCurrency(t.originalAmount, t.originalCurrency, false, false)} 
-                          category={(t.type === 'INVESTMENT' ? 'INVESTMENTS' : t.type === 'SAVING' ? 'SAVINGS' : t.type) as PrivacyCategory} 
+                          value={formatCurrency(t.originalAmount, t.originalCurrency as Currency, false)} 
+                          category={t.type === 'INCOME' ? 'INCOME_DETAILS' : t.type === 'EXPENSE' ? 'EXPENSE_DETAILS' : t.type === 'SAVING' ? 'SAVINGS_DETAILS' : 'INVESTMENT_DETAILS'} 
+                          id={t.id}
                         />
-                      </span>
+                      </div>
                       {t.originalCurrency !== 'VND' && (
-                        <div className="text-[10px] text-slate-500">
-                          <PrivacyMask 
-                            value={formatCurrency(t.amount, 'VND', false)} 
-                            category={(t.type === 'INVESTMENT' ? 'INVESTMENTS' : t.type === 'SAVING' ? 'SAVINGS' : t.type) as PrivacyCategory} 
-                            showIcon={false}
-                          />
+                        <div className="text-[10px] text-slate-400/80 mt-0.5">
+                          ≈ <PrivacyMask 
+                              value={formatCurrency(t.amount, 'VND', false)} 
+                              category={t.type === 'INCOME' ? 'INCOME_DETAILS' : t.type === 'EXPENSE' ? 'EXPENSE_DETAILS' : t.type === 'SAVING' ? 'SAVINGS_DETAILS' : 'INVESTMENT_DETAILS'} 
+                              id={t.id}
+                              showIcon={false}
+                            />
                         </div>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteId(t.id);
-                        }}
-                        className="text-slate-400 hover:text-rose-500 transition-all p-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20"
-                        title="Xóa giao dịch"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleIdVisibility(t.id);
+                          }}
+                          className={`p-2 rounded-lg transition-all ${isIdVisible(t.id) ? 'text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10' : 'text-slate-400 opacity-0 group-hover:opacity-100 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                          title={isIdVisible(t.id) ? 'Ẩn số liệu hàng này' : 'Hiện số liệu hàng này'}
+                        >
+                          {isIdVisible(t.id) ? <Eye size={14} /> : <EyeOff size={14} />}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteId(t.id);
+                          }}
+                          className="text-slate-400 opacity-0 group-hover:opacity-100 hover:text-rose-500 transition-all p-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                          title="Xóa giao dịch"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -318,21 +354,33 @@ export default function TransactionTable() {
                       <PrivacyMask 
                         value={formatCurrency(t.originalAmount, t.originalCurrency, false, false)} 
                         category={(t.type === 'INVESTMENT' ? 'INVESTMENTS' : t.type === 'SAVING' ? 'SAVINGS' : t.type) as PrivacyCategory} 
+                        id={t.id}
                       />
                     </div>
                     <p className={`text-[10px] font-medium opacity-80 mt-0.5 ${TYPE_COLORS[t.type]?.split(' ')[0] || 'text-slate-500'}`}>
                       {TYPE_LABELS[t.type]}
                     </p>
                   </div>
+                  <div className="flex flex-col items-center gap-2 px-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleIdVisibility(t.id);
+                      }}
+                      className={`p-2 rounded-lg transition-colors ${isIdVisible(t.id) ? 'text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10' : 'text-slate-400'}`}
+                    >
+                      {isIdVisible(t.id) ? <Eye size={16} /> : <EyeOff size={16} />}
+                    </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setDeleteId(t.id);
                       }}
-                      className="p-2.5 text-slate-400 hover:text-rose-500 transition-colors"
+                      className="p-2 text-slate-400 hover:text-rose-500 transition-colors"
                     >
                       <Trash2 size={16} />
                     </button>
+                  </div>
                 </div>
               </div>
             ))}

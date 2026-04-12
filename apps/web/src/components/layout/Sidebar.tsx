@@ -7,6 +7,7 @@ import { LayoutDashboard, ArrowLeftRight, PieChart, Target, ChevronLeft, Chevron
 import { useTheme } from '@/context/ThemeContext';
 import { useRouter } from 'next/navigation';
 import { useUser, useLogout } from '@/hooks/api/useAuth';
+import ProfileModal from '@/components/shared/ProfileModal';
 
 const NAV_ITEMS = [
   { href: '/', icon: LayoutDashboard, label: 'Tổng quan' },
@@ -29,6 +30,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const router = useRouter();
   const { data: user } = useUser();
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
+  const [showProfile, setShowProfile] = useState(false);
 
   const getInitials = (name?: string | null) => {
     if (!name) return 'U';
@@ -88,43 +90,66 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </nav>
 
         {/* Bottom controls */}
-        <div className="p-2 space-y-1 border-t border-slate-200 dark:border-slate-800/50">
-          {/* Mobile Profile & Notification section (Visible on mobile only) */}
-          <div className="md:hidden pb-2 mb-2 border-b border-slate-100 dark:border-slate-800/50">
-            <div className="flex items-center gap-3 px-3 py-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl mb-2">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-lg shadow-sm shrink-0">
-                {getInitials(user?.displayName)}
+        <div className="p-3 mt-auto border-t border-slate-200 dark:border-slate-800/50 space-y-2">
+          {/* User Profile Section */}
+          {!collapsed ? (
+            <div className="group relative">
+              <div 
+                onClick={() => setShowProfile(true)}
+                className="flex items-center gap-3 p-2 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-700/50"
+              >
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-lg shadow-sm shrink-0">
+                  {getInitials(user?.displayName)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-slate-900 dark:text-white truncate text-sm leading-tight">
+                    {user?.displayName || 'Người dùng'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                    {user?.email}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="font-semibold text-slate-900 dark:text-white truncate text-sm">
-                  {user?.displayName || 'Người dùng'}
-                </p>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                  {user?.email}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
+              
               <button 
                 onClick={() => logout()}
                 disabled={isLoggingOut}
-                className="flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 text-xs font-semibold"
+                className="flex items-center gap-2 mt-2 w-full px-3 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-colors text-xs font-medium disabled:opacity-50"
+                title="Đăng xuất"
               >
                 <LogOut size={14} />
-                Đăng xuất tài khoản
+                <span>Đăng xuất</span>
               </button>
             </div>
-          </div>
+          ) : (
+            <div className="flex flex-col items-center gap-4 py-2">
+              <button 
+                onClick={() => setShowProfile(true)}
+                className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-lg shadow-sm"
+              >
+                {getInitials(user?.displayName)}
+              </button>
+              <button 
+                onClick={() => logout()}
+                disabled={isLoggingOut}
+                className="p-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-colors disabled:opacity-50"
+                title="Đăng xuất"
+              >
+                <LogOut size={18} />
+              </button>
+            </div>
+          )}
 
           <button
             onClick={toggleTheme}
-            className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all ${collapsed ? 'justify-center' : ''}`}
+            className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all ${collapsed ? 'justify-center border border-transparent' : 'border border-transparent'}`}
           >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             {!collapsed && <span>{theme === 'dark' ? 'Chế độ sáng' : 'Chế độ tối'}</span>}
           </button>
         </div>
+
+        <ProfileModal open={showProfile} onClose={() => setShowProfile(false)} />
 
         {/* Collapse toggle (Desktop only) */}
         <button

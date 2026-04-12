@@ -7,7 +7,7 @@ import GoalCards from '@/components/goals/GoalCards';
 export default function GoalsPage() {
   return (
     <div className="min-h-full pb-20">
-      <Header title="Mục tiêu" subtitle="Theo dõi tiến độ tiết kiệm theo mục tiêu" />
+      <Header title="Mục tiêu" />
       <div className="p-6">
         <GoalCards />
       </div>

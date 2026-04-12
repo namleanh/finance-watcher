@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Trash2, Banknote, TrendingUp, Clock, X, Landmark, PiggyBank } from 'lucide-react';
+import { Plus, Trash2, Banknote, TrendingUp, Clock, X, Landmark, PiggyBank, Eye, EyeOff } from 'lucide-react';
 import { useSavingsDeposits, useCreateSavingsDeposit, useDeleteSavingsDeposit, useWithdrawSavingsDeposit, SavingsDeposit } from '@/hooks/api/useSavingsDeposits';
 import { useWallets } from '@/hooks/api/useWallets';
 import { formatCurrency } from '@/lib/exchangeRate';
@@ -247,7 +247,7 @@ export default function SavingsDepositsPage() {
   const [selectedDeposit, setSelectedDeposit] = useState<SavingsDeposit | null>(null);
   const { mutate: withdrawDeposit, isPending: isWithdrawing } = useWithdrawSavingsDeposit();
   const [withdrawId, setWithdrawId] = useState<string | null>(null);
-  const { maskValue, isCategoryHidden, toggleCategory } = usePrivacy();
+  const { isCategoryHidden, toggleCategory, toggleIdVisibility, isIdVisible } = usePrivacy();
 
   const totalDeposited = deposits
     .filter(d => d.status === 'ACTIVE')
@@ -259,7 +259,7 @@ export default function SavingsDepositsPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Header title="Tiết kiệm" subtitle="Quản lý các sổ tiết kiệm có kỳ hạn" />
+      <Header title="Tiết kiệm" />
 
       <div className="flex-1 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 overflow-auto">
         {/* Summary Row */}
@@ -290,10 +290,18 @@ export default function SavingsDepositsPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900 dark:text-white">Danh sách sổ tiết kiệm</h2>
           <div className="flex items-center gap-2">
-
+            <button
+              onClick={() => {
+                toggleCategory('SAVINGS_DETAILS');
+              }}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${!isCategoryHidden('SAVINGS_DETAILS') ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-500/20' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50'}`}
+            >
+              {isCategoryHidden('SAVINGS_DETAILS') ? <Eye size={16} /> : <EyeOff size={16} />}
+              <span className="hidden sm:inline">{isCategoryHidden('SAVINGS_DETAILS') ? 'Hiện' : 'Ẩn'}</span>
+            </button>
             <button
               onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors shadow-sm"
+              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors shadow-sm shadow-indigo-500/20"
             >
               <Plus size={16} />
               Thêm sổ
@@ -364,6 +372,7 @@ export default function SavingsDepositsPage() {
                               <PrivacyMask 
                                 value={formatCurrency(d.depositAmount, d.currency as Currency, false)} 
                                 category="SAVINGS_DETAILS" 
+                                id={d.id}
                               />
                             </div>
                           </td>
@@ -385,9 +394,10 @@ export default function SavingsDepositsPage() {
                           </td>
                           <td className="px-3 py-4 text-right whitespace-nowrap">
                             <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                              +<PrivacyMask 
+                              <PrivacyMask 
                                 value={formatCurrency(d.interestEarned, d.currency as Currency, false)} 
                                 category="SAVINGS_DETAILS" 
+                                id={d.id}
                                 showIcon={false}
                               />
                             </div>
@@ -395,9 +405,18 @@ export default function SavingsDepositsPage() {
                           <td className="px-5 py-4 text-center">
                             <span className={`text-[10px] font-medium px-2 py-1 rounded-lg ${className}`}>{label}</span>
                           </td>
-                          <td className="px-5 py-4 text-right">
-                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-
+                          <td className="px-5 py-4 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-2 text-right">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleIdVisibility(d.id);
+                                }}
+                                className={`p-2 rounded-lg transition-all ${isIdVisible(d.id) ? 'text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10' : 'text-slate-400 opacity-0 group-hover:opacity-100 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                title={isIdVisible(d.id) ? 'Ẩn số tiền hàng này' : 'Hiện số tiền hàng này'}
+                              >
+                                {isIdVisible(d.id) ? <Eye size={16} /> : <EyeOff size={16} />}
+                              </button>
                               {d.status !== 'WITHDRAWN' && (
                                 <button 
                                   onClick={(e) => {
@@ -446,23 +465,32 @@ export default function SavingsDepositsPage() {
                               e.stopPropagation();
                               setWithdrawId(d.id);
                             }}
-                            className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 active:bg-emerald-500 active:text-white text-[10px] font-bold transition-all uppercase tracking-tighter"
+                            className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 active:bg-emerald-500 active:text-white text-[10px] font-bold transition-all uppercase tracking-tighter shadow-sm"
                           >
                             Tất toán
                           </button>
                         )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleIdVisibility(d.id);
+                          }}
+                          className={`p-2 rounded-lg transition-colors ${isIdVisible(d.id) ? 'text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10' : 'text-slate-400 border border-slate-200 dark:border-slate-700'}`}
+                        >
+                          {isIdVisible(d.id) ? <Eye size={18} /> : <EyeOff size={18} />}
+                        </button>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3">
                           <p className="text-slate-400 mb-1">Số tiền gửi</p>
                           <div className="font-bold text-sm text-slate-900 dark:text-white">
-                            <PrivacyMask value={formatCurrency(d.depositAmount, d.currency as Currency, false)} category="SAVINGS_DETAILS" />
+                            <PrivacyMask value={formatCurrency(d.depositAmount, d.currency as Currency, false)} category="SAVINGS_DETAILS" id={d.id} />
                           </div>
                         </div>
                         <div className="bg-emerald-50 dark:bg-emerald-500/10 rounded-xl p-3">
                           <p className="text-slate-400 mb-1">Tiền lãi</p>
                           <div className="font-bold text-sm text-emerald-600 dark:text-emerald-400">
-                            +<PrivacyMask value={formatCurrency(d.interestEarned, d.currency as Currency, false)} category="SAVINGS_DETAILS" showIcon={false} />
+                            +<PrivacyMask value={formatCurrency(d.interestEarned, d.currency as Currency, false)} category="SAVINGS_DETAILS" id={d.id} showIcon={false} />
                           </div>
                         </div>
                         <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3">

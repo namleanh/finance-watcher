@@ -19,7 +19,7 @@ interface StatCardProps {
 }
 
 export function StatCard({ title, value, change, icon, gradient, sub, privacyCategory, subPrivacyCategory, href }: StatCardProps) {
-  const { maskValue } = usePrivacy();
+  const { maskValue, toggleCategory } = usePrivacy();
 
   const renderSub = () => {
     if (!sub) return null;
@@ -31,7 +31,10 @@ export function StatCard({ title, value, change, icon, gradient, sub, privacyCat
         const [full, amount, currency] = match;
         const prefix = sub.split(full)[0];
         return (
-          <p className="text-xs text-slate-600 dark:text-slate-500 mt-1">
+          <p 
+            className="text-xs text-slate-600 dark:text-slate-500 mt-1 cursor-pointer"
+            onClick={() => toggleCategory(subPrivacyCategory)}
+          >
             {prefix}
             <PrivacyMask 
               value={`${amount} ${currency}`} 
@@ -42,7 +45,14 @@ export function StatCard({ title, value, change, icon, gradient, sub, privacyCat
           </p>
         );
       }
-      return <p className="text-xs text-slate-600 dark:text-slate-500 mt-1">{maskValue(sub, subPrivacyCategory)}</p>;
+      return (
+        <p 
+          className="text-xs text-slate-600 dark:text-slate-500 mt-1 cursor-pointer"
+          onClick={() => toggleCategory(subPrivacyCategory)}
+        >
+          {maskValue(sub, subPrivacyCategory)}
+        </p>
+      );
     }
     return <p className="text-xs text-slate-600 dark:text-slate-500 mt-1">{sub}</p>;
   };
@@ -58,7 +68,9 @@ export function StatCard({ title, value, change, icon, gradient, sub, privacyCat
           <div className="flex items-center gap-2 mb-1">
             <div className={`font-bold text-slate-900 dark:text-white whitespace-nowrap transition-all duration-200 ${
               value.length > 20 ? 'text-base' : value.length > 15 ? 'text-lg' : value.length >= 12 ? 'text-xl' : 'text-2xl'
-            }`}>
+            } ${privacyCategory ? 'cursor-pointer' : ''}`}
+              onClick={() => privacyCategory && toggleCategory(privacyCategory)}
+            >
               {privacyCategory ? (
                 <PrivacyMask 
                   value={value} 

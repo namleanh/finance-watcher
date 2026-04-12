@@ -11,7 +11,7 @@ export default function TransactionsPage() {
 
   return (
     <div className="relative min-h-full pb-20">
-      <Header title="Giao dịch" subtitle="Theo dõi thu nhập và chi tiêu" />
+      <Header title="Giao dịch" />
       <div className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-white">Lịch sử giao dịch</h2>

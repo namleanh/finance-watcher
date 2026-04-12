@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Trash2, Wallet, Building2, Smartphone, CreditCard, Coins, Edit2 } from 'lucide-react';
+import { Plus, Trash2, Wallet, Building2, Smartphone, CreditCard, Coins, Edit2, Eye, EyeOff } from 'lucide-react';
 import { useWallets, useCreateWallet, useDeleteWallet, useUpdateWallet, Wallet as WalletType } from '@/hooks/api/useWallets';
 import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
@@ -217,7 +217,7 @@ export default function WalletsPage() {
   const [editWallet, setEditWallet] = useState<WalletType | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedWallet, setSelectedWallet] = useState<WalletType | null>(null);
-  const { maskValue, isCategoryHidden, toggleCategory } = usePrivacy();
+  const { isCategoryHidden, toggleCategory, toggleIdVisibility, isIdVisible } = usePrivacy();
 
   const totalBalance = wallets.reduce((s, w) => s + toVND(w.balance, w.currency as Currency), 0);
 
@@ -229,7 +229,7 @@ export default function WalletsPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Header title="Ví tiền" subtitle="Quản lý các tài khoản và ví của bạn" />
+      <Header title="Ví tiền" />
 
       <div className="flex-1 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 overflow-auto">
         {/* Summary Card */}
@@ -250,13 +250,22 @@ export default function WalletsPage() {
         {/* Wallet List */}
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900 dark:text-white">Danh sách ví</h2>
-          <button
-            onClick={() => { setEditWallet(null); setShowModal(true); }}
-            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors shadow-sm"
-          >
-            <Plus size={16} />
-            Thêm ví
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => toggleCategory('NET_WORTH_DETAILS')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${!isCategoryHidden('NET_WORTH_DETAILS') ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-500/20' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50'}`}
+            >
+              {isCategoryHidden('NET_WORTH_DETAILS') ? <Eye size={16} /> : <EyeOff size={16} />}
+              <span className="hidden sm:inline">{isCategoryHidden('NET_WORTH_DETAILS') ? 'Hiện' : 'Ẩn'}</span>
+            </button>
+            <button
+              onClick={() => { setEditWallet(null); setShowModal(true); }}
+              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors shadow-sm shadow-indigo-500/20"
+            >
+              <Plus size={16} />
+              Thêm ví
+            </button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -303,6 +312,16 @@ export default function WalletsPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          toggleIdVisibility(wallet.id);
+                        }}
+                        className={`p-2.5 rounded-lg transition-colors ${isIdVisible(wallet.id) ? 'text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10' : 'text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10'}`}
+                        title={isIdVisible(wallet.id) ? 'Ẩn số tiền ví này' : 'Hiện số tiền ví này'}
+                      >
+                        {isIdVisible(wallet.id) ? <Eye size={16} /> : <EyeOff size={16} />}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setEditWallet(wallet);
                           setShowModal(true);
                         }}
@@ -328,14 +347,16 @@ export default function WalletsPage() {
                     <div className="text-2xl font-bold text-slate-900 dark:text-white">
                       <PrivacyMask 
                         value={formatCurrency(wallet.balance, wallet.currency as Currency, false)} 
-                        category="NET_WORTH" 
+                        category="NET_WORTH_DETAILS" 
+                        id={wallet.id}
                       />
                     </div>
                     {wallet.currency !== 'VND' && (
                       <div className="text-[11px] font-medium text-indigo-500 mt-0.5">
                         ≈ <PrivacyMask 
                             value={toVND(wallet.balance, wallet.currency as Currency).toLocaleString('en-US') + ' VND'} 
-                            category="NET_WORTH" 
+                            category="NET_WORTH_DETAILS" 
+                            id={wallet.id}
                             showIcon={false}
                           />
                       </div>

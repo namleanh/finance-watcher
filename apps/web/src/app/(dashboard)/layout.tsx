@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useUser } from '@/hooks/api/useAuth';
 import { Menu, Wallet } from 'lucide-react';
+import MarketDataWidget from '@/components/dashboard/MarketDataWidget';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -55,7 +56,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Top Bar */}
-        <header className="md:hidden flex items-center justify-between px-4 sm:px-6 py-3 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 shrink-0">
+        <header className="md:hidden flex items-center justify-between px-4 sm:px-6 py-2.5 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
               <Wallet size={16} className="text-white" />
@@ -70,7 +71,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <MarketDataWidget />
+
+        <main id="main-content" className="flex-1 overflow-y-auto">
           {children}
         </main>
       </div>

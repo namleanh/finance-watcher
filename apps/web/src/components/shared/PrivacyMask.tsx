@@ -7,34 +7,30 @@ import { usePrivacy, PrivacyCategory } from '@/context/PrivacyContext';
 interface PrivacyMaskProps {
   value: string;
   category: PrivacyCategory;
+  id?: string;
   className?: string;
   showIcon?: boolean;
 }
 
 /**
  * A component that displays a value or a mask based on privacy settings.
- * Clicking the component toggles the privacy state for the entire category.
+ * Individual row visibility is supported if an 'id' is provided.
  */
-export default function PrivacyMask({ value, category, className = '', showIcon = true }: PrivacyMaskProps) {
-  const { isCategoryHidden, toggleCategory } = usePrivacy();
-  const isHidden = isCategoryHidden(category);
-
-  const handleToggle = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent triggering parent click handlers (e.g., table row clicks)
-    toggleCategory(category);
-  };
+export default function PrivacyMask({ value, category, id, className = '', showIcon = false }: PrivacyMaskProps) {
+  const { isCategoryHidden, isIdVisible } = usePrivacy();
+  
+  // Hidden only if global category is hidden AND this specific ID is not forced visible
+  const isHidden = isCategoryHidden(category) && (!id || !isIdVisible(id));
 
   return (
     <span 
-      onClick={handleToggle}
-      className={`inline-flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity select-none ${className}`}
-      title={isHidden ? 'Hiện số liệu' : 'Ẩn số liệu'}
+      className={`inline-flex items-center gap-1.5 select-none ${className}`}
     >
       <span className={isHidden ? 'font-mono tracking-tighter' : ''}>
         {isHidden ? '••••••' : value}
       </span>
       {showIcon && (
-        <span className="text-slate-400 dark:text-slate-500 hover:text-indigo-500 transition-colors shrink-0">
+        <span className="text-slate-400 dark:text-slate-500 shrink-0">
           {isHidden ? <EyeOff size={14} /> : <Eye size={14} />}
         </span>
       )}

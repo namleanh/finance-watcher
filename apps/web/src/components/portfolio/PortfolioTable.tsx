@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Trash2, Edit2, Plus, TrendingUp, TrendingDown, X, Banknote, Briefcase, PiggyBank, Landmark, LayoutGrid } from 'lucide-react';
+import { Trash2, Edit2, Plus, TrendingUp, TrendingDown, X, Banknote, Briefcase, PiggyBank, Landmark, LayoutGrid, Eye, EyeOff } from 'lucide-react';
 import { usePortfolioAssets, usePortfolioSummary, useCreatePortfolioAsset, useUpdatePortfolioAsset, useDeletePortfolioAsset, PortfolioAsset } from '@/hooks/api/usePortfolio';
 import { usePrivacy } from '@/context/PrivacyContext';
 import PrivacyMask from '@/components/shared/PrivacyMask';
@@ -238,7 +238,7 @@ export default function PortfolioTable() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<PortfolioAsset | undefined>();
   const [selectedAsset, setSelectedAsset] = useState<PortfolioAsset | null>(null);
-  const { maskValue, isCategoryHidden, toggleCategory } = usePrivacy();
+  const { isCategoryHidden, toggleCategory, toggleIdVisibility, isIdVisible } = usePrivacy();
 
   if (isLoading) {
     return (
@@ -280,10 +280,18 @@ export default function PortfolioTable() {
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700/50">
           <h3 className="font-semibold text-slate-900 dark:text-white">Danh mục đầu tư</h3>
           <div className="flex items-center gap-2">
-
+            <button
+              onClick={() => {
+                toggleCategory('INVESTMENT_DETAILS');
+              }}
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl border text-xs font-semibold transition-all ${!isCategoryHidden('INVESTMENT_DETAILS') ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-500/20' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50'}`}
+            >
+              {isCategoryHidden('INVESTMENT_DETAILS') ? <Eye size={14} /> : <EyeOff size={14} />}
+              <span className="hidden sm:inline">{isCategoryHidden('INVESTMENT_DETAILS') ? 'Hiện' : 'Ẩn'}</span>
+            </button>
             <button
               onClick={() => { setEditing(undefined); setShowModal(true); }}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold transition-all"
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold transition-all shadow-sm shadow-violet-500/20"
             >
               <Plus size={14} /> Thêm tài sản
             </button>
@@ -331,13 +339,13 @@ export default function PortfolioTable() {
                         </td>
                         <td className="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-300">{a.units.toLocaleString('en-US')}</td>
                         <td className="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-300">
-                          <PrivacyMask value={formatCurrency(a.costBasis, a.currency as Currency)} category="INVESTMENT_DETAILS" />
+                          <PrivacyMask value={formatCurrency(a.costBasis, a.currency as Currency)} category="INVESTMENT_DETAILS" id={a.id} />
                         </td>
                         <td className="px-4 py-3 text-right text-sm text-slate-900 dark:text-slate-200 font-medium">
-                          <PrivacyMask value={formatCurrency(a.currentPrice, a.currency as Currency)} category="INVESTMENT_DETAILS" />
+                          <PrivacyMask value={formatCurrency(a.currentPrice, a.currency as Currency)} category="INVESTMENT_DETAILS" id={a.id} />
                         </td>
                         <td className="px-4 py-3 text-right text-sm text-indigo-600 dark:text-indigo-400 font-semibold">
-                          <PrivacyMask value={formatCurrency(value, a.currency as Currency, false)} category="INVESTMENT_DETAILS" />
+                          <PrivacyMask value={formatCurrency(value, a.currency as Currency, false)} category="INVESTMENT_DETAILS" id={a.id} />
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className={`flex items-center justify-end gap-1 ${pnl >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
@@ -346,18 +354,28 @@ export default function PortfolioTable() {
                           </div>
                           <p className={`text-[10px] text-right ${pnl >= 0 ? 'text-emerald-500/70 dark:text-emerald-400/70' : 'text-rose-500/70 dark:text-rose-400/70'}`}>
                             {pnl >= 0 ? '+' : ''}
-                            <PrivacyMask value={formatCurrency(Math.abs(pnl), a.currency as Currency, false)} category="INVESTMENT_DETAILS" showIcon={false} />
+                            <PrivacyMask value={formatCurrency(Math.abs(pnl), a.currency as Currency, false)} category="INVESTMENT_DETAILS" id={a.id} showIcon={false} />
                           </p>
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all text-right justify-end">
+                          <div className="flex items-center gap-1 text-right justify-end">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleIdVisibility(a.id || '');
+                              }}
+                              className={`p-2 rounded-lg transition-all ${isIdVisible(a.id || '') ? 'text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10' : 'text-slate-400 opacity-0 group-hover:opacity-100 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                              title={isIdVisible(a.id || '') ? 'Ẩn số liệu hàng này' : 'Hiện số liệu hàng này'}
+                            >
+                              {isIdVisible(a.id || '') ? <Eye size={14} /> : <EyeOff size={14} />}
+                            </button>
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setEditing(a);
                                 setShowModal(true);
                               }} 
-                              className="p-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                              className="p-2 text-slate-400 opacity-0 group-hover:opacity-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                             >
                               <Edit2 size={14} />
                             </button>
@@ -366,7 +384,7 @@ export default function PortfolioTable() {
                                 e.stopPropagation();
                                 if (confirm('Bạn có chắc muốn xóa tài sản này?')) deleteAsset(a.id);
                               }} 
-                              className="p-2 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
+                              className="p-2 text-slate-400 opacity-0 group-hover:opacity-100 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
                             >
                               <Trash2 size={14} />
                             </button>
@@ -387,64 +405,97 @@ export default function PortfolioTable() {
                 const pnl = value - cost;
                 const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
                 return (
-                  <div 
-                    key={a.id} 
-                    onClick={() => setSelectedAsset(a)}
-                    className="p-4 space-y-3 hover:bg-slate-50 dark:hover:bg-slate-700/20 active:bg-slate-100 dark:active:bg-slate-700/40 transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="min-w-0">
-                        <h4 className="font-bold text-slate-900 dark:text-white truncate">{a.name}</h4>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          {a.ticker && <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-mono font-medium">{a.ticker}</span>}
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400">{a.units.toLocaleString('en-US')} đơn vị</span>
+                  <React.Fragment key={a.id}>
+                    <div 
+                      onClick={() => setSelectedAsset(a)}
+                      className="p-4 space-y-3 hover:bg-slate-50 dark:hover:bg-slate-700/20 active:bg-slate-100 dark:active:bg-slate-700/40 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="min-w-0">
+                          <h4 className="font-bold text-slate-900 dark:text-white truncate">{a.name}</h4>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {a.ticker && <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-mono font-medium">{a.ticker}</span>}
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400">{a.units.toLocaleString('en-US')} đơn vị</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditing(a);
+                              setShowModal(true);
+                            }} 
+                            className="p-2.5 text-slate-400 hover:text-indigo-500"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm('Bạn có chắc muốn xóa tài sản này?')) deleteAsset(a.id);
+                            }} 
+                            className="p-2.5 text-slate-400 hover:text-rose-500"
+                          >
+                            <Trash2 size={18} />
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1">
+
+                      <div className="grid grid-cols-2 gap-4 pt-1">
+                        <div>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Thị giá</p>
+                          <div className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                            <PrivacyMask value={formatCurrency(value, a.currency as Currency, false)} category="INVESTMENT_DETAILS" id={a.id} />
+                          </div>
+                          <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+                            Giá: <PrivacyMask value={formatCurrency(a.currentPrice, a.currency as Currency)} category="INVESTMENT_DETAILS" id={a.id} showIcon={false} />
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Lãi / Lỗ</p>
+                          <div className={`flex items-center justify-end gap-1 font-bold text-sm ${pnl >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
+                            {pnl >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%
+                          </div>
+                          <p className={`text-[10px] font-medium mt-0.5 ${pnl >= 0 ? 'text-emerald-500/70 dark:text-emerald-400/70' : 'text-rose-500/70 dark:text-rose-400/70'}`}>
+                            {pnl >= 0 ? '+' : ''}
+                            <PrivacyMask value={formatCurrency(Math.abs(pnl), a.currency as Currency, false)} category="INVESTMENT_DETAILS" id={a.id} showIcon={false} />
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 justify-center py-2 bg-slate-50/50 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center gap-6">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleIdVisibility(a.id || '');
+                          }}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors ${isIdVisible(a.id || '') ? 'text-indigo-600 bg-indigo-100 dark:bg-indigo-500/20' : 'text-slate-400'}`}
+                        >
+                          {isIdVisible(a.id || '') ? <Eye size={14} /> : <EyeOff size={14} />} {isIdVisible(a.id || '') ? 'Ẩn' : 'Hiện'}
+                        </button>
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditing(a);
                             setShowModal(true);
                           }} 
-                          className="p-2.5 text-slate-400 hover:text-indigo-500"
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-slate-400 font-bold text-[10px]"
                         >
-                          <Edit2 size={18} />
+                          <Edit2 size={14} /> Sửa
                         </button>
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
                             if (confirm('Bạn có chắc muốn xóa tài sản này?')) deleteAsset(a.id);
                           }} 
-                          className="p-2.5 text-slate-400 hover:text-rose-500"
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-slate-400 font-bold text-[10px]"
                         >
-                          <Trash2 size={18} />
+                          <Trash2 size={14} /> Xóa
                         </button>
                       </div>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-4 pt-1">
-                      <div>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Thị giá</p>
-                        <div className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
-                          <PrivacyMask value={formatCurrency(value, a.currency as Currency, false)} category="INVESTMENT_DETAILS" />
-                        </div>
-                        <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
-                          Giá: <PrivacyMask value={formatCurrency(a.currentPrice, a.currency as Currency)} category="INVESTMENT_DETAILS" showIcon={false} />
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Lãi / Lỗ</p>
-                        <div className={`flex items-center justify-end gap-1 font-bold text-sm ${pnl >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
-                          {pnl >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%
-                        </div>
-                        <p className={`text-[10px] font-medium mt-0.5 ${pnl >= 0 ? 'text-emerald-500/70 dark:text-emerald-400/70' : 'text-rose-500/70 dark:text-rose-400/70'}`}>
-                          {pnl >= 0 ? '+' : ''}
-                          <PrivacyMask value={formatCurrency(Math.abs(pnl), a.currency as Currency, false)} category="INVESTMENT_DETAILS" showIcon={false} />
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                  </React.Fragment>
                 );
               })}
             </div>
