@@ -53,7 +53,7 @@ export default function TransactionDetailModal({ transaction, onClose, onDelete 
           <div className="flex flex-col items-center pt-2">
             <p className="text-white/80 text-[10px] font-bold uppercase tracking-widest mb-1">{config.label}</p>
             <h2 className="text-white text-2xl sm:text-3xl font-black tracking-tight text-center px-4">
-              {transaction.type === 'EXPENSE' ? '-' : '+'}{formatCurrency(transaction.originalAmount, transaction.originalCurrency, false)}
+              {transaction.type === 'EXPENSE' ? '-' : '+'}{formatCurrency(transaction.originalAmount, transaction.originalCurrency, false, false)}
             </h2>
             {transaction.originalCurrency !== 'VND' && (
               <p className="text-white/60 text-[10px] font-medium mt-0.5">

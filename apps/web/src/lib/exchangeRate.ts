@@ -31,7 +31,8 @@ export function toVND(amount: number, from: Currency): number {
 export function formatCurrency(
   amount: number,
   currency: Currency = 'VND',
-  compact = false
+  compact = false,
+  round = true
 ): string {
   if (currency === 'VND' && compact) {
     if (Math.abs(amount) >= 1_000_000_000) {
@@ -46,7 +47,7 @@ export function formatCurrency(
       const val = amount / 1_000;
       return `${Number(val.toFixed(1))}k\u00A0đ`;
     }
-    return `${Math.round(amount)}\u00A0đ`;
+    return `${round ? Math.round(amount) : amount.toLocaleString('en-US', { maximumFractionDigits: 2 })}\u00A0đ`;
   }
 
   const symbols: Record<Currency, string> = { 
@@ -55,9 +56,16 @@ export function formatCurrency(
   const sym = symbols[currency];
 
   if (currency === 'VND') {
-    return `${Math.round(amount).toLocaleString('en-US')}\u00A0${sym}`;
+    const formatted = round 
+      ? Math.round(amount).toLocaleString('en-US') 
+      : amount.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    return `${formatted}\u00A0${sym}`;
   }
-  return `${sym}${amount.toLocaleString('en-US')}`;
+
+  const formatted = amount.toLocaleString('en-US', {
+    maximumFractionDigits: round ? 2 : 8,
+  });
+  return `${sym}${formatted}`;
 }
 
 /**

@@ -255,7 +255,7 @@ export default function TransactionTable() {
                       <span className={`text-sm font-semibold ${t.type === 'INCOME' ? 'text-emerald-500 dark:text-emerald-400' : t.type === 'EXPENSE' ? 'text-rose-500 dark:text-rose-400' : 'text-slate-900 dark:text-slate-200'}`}>
                         {t.type === 'EXPENSE' ? '-' : '+'}
                         <PrivacyMask 
-                          value={formatCurrency(t.originalAmount, t.originalCurrency, false)} 
+                          value={formatCurrency(t.originalAmount, t.originalCurrency, false, false)} 
                           category={(t.type === 'INVESTMENT' ? 'INVESTMENTS' : t.type === 'SAVING' ? 'SAVINGS' : t.type) as PrivacyCategory} 
                         />
                       </span>
@@ -316,7 +316,7 @@ export default function TransactionTable() {
                     <div className={`text-sm font-bold ${t.type === 'INCOME' ? 'text-emerald-500' : t.type === 'EXPENSE' ? 'text-rose-500' : 'dark:text-white'}`}>
                       {t.type === 'EXPENSE' ? '-' : '+'}
                       <PrivacyMask 
-                        value={formatCurrency(t.originalAmount, t.originalCurrency, false)} 
+                        value={formatCurrency(t.originalAmount, t.originalCurrency, false, false)} 
                         category={(t.type === 'INVESTMENT' ? 'INVESTMENTS' : t.type === 'SAVING' ? 'SAVINGS' : t.type) as PrivacyCategory} 
                       />
                     </div>
