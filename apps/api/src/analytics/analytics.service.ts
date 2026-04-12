@@ -174,12 +174,20 @@ export class AnalyticsService {
     let buckets: { label: string; start: Date; end: Date }[] = [];
 
     switch (range) {
+      case 'TODAY' as any:
+        start = startOfDay(now);
+        buckets = eachHourOfInterval({ start, end: endOfDay(now) }).map(h => ({
+          label: format(h, 'HH:mm'),
+          start: h,
+          end: new Date(h.getTime() + 3599999), 
+        }));
+        break;
       case '1D':
-        start = subHours(now, 24);
+        start = subHours(now, 23); // 24 entries total
         buckets = eachHourOfInterval({ start, end: now }).map(h => ({
           label: format(h, 'HH:mm'),
           start: h,
-          end: new Date(h.getTime() + 3599999), // +59m 59s
+          end: new Date(h.getTime() + 3599999),
         }));
         break;
       case '1W':
@@ -208,16 +216,56 @@ export class AnalyticsService {
         break;
     }
 
-    const txns = await this.prisma.transaction.findMany({
-      where: {
-        userId,
-        date: { gte: start },
-      },
+    // 1. Get current total assets (snapshot)
+    const [wallets, portfolioAssets, goalsAgg, savingsDeposits, marketData] = await Promise.all([
+      this.prisma.wallet.findMany({ where: { userId }, select: { balance: true, currency: true } }),
+      this.prisma.portfolioAsset.findMany({ where: { userId }, select: { units: true, currentPrice: true, currency: true, ticker: true } }),
+      this.prisma.savingsGoal.aggregate({ where: { userId }, _sum: { currentAmount: true } }),
+      this.prisma.savingsDeposit.findMany({ where: { userId, status: 'ACTIVE' }, select: { depositAmount: true, interestRate: true, termMonths: true, maturityDate: true } }),
+      this.prisma.marketData.findMany({ where: { OR: [{ type: 'CURRENCY' }, { type: 'GOLD' }] } }),
+    ]);
+
+    const rates: Record<string, number> = { VND: 1 };
+    marketData.forEach(m => { rates[m.symbol] = Number(m.price); });
+
+    const portfolioValue = portfolioAssets.reduce((sum, asset) => {
+      let price = Number(asset.currentPrice);
+      if (asset.ticker && rates[asset.ticker]) price = rates[asset.ticker];
+      const valueInOriginalCurrency = Number(asset.units) * price;
+      return sum + (valueInOriginalCurrency * (rates[asset.currency] || 1));
+    }, 0);
+
+    const walletBalance = wallets.reduce((sum, w) => sum + (Number(w.balance) * (rates[w.currency] || 1)), 0);
+    const goalBalance = Number(goalsAgg._sum?.currentAmount || 0);
+    const depositBalance = savingsDeposits.reduce((s, d) => {
+      const principal = Number(d.depositAmount);
+      const interest = new Date(d.maturityDate) <= now ? Math.round(principal * (Number(d.interestRate) / 100) * (d.termMonths / 12)) : 0;
+      return s + principal + interest;
+    }, 0);
+
+    const currentTotalAssets = walletBalance + portfolioValue + goalBalance + depositBalance;
+
+    // 2. Get all transactions from start to now to calculate history
+    const allTxnsSinceStart = await this.prisma.transaction.findMany({
+      where: { userId, date: { gte: start } },
       select: { type: true, amount: true, date: true },
+      orderBy: { date: 'asc' },
     });
 
+    // 3. Calculate initial balance at start
+    // initialBalance = currentTotalAssets - sum(net changes since start)
+    const totalNetChangeSinceStart = allTxnsSinceStart.reduce((sum, t) => {
+      const amt = Number(t.amount);
+      if (t.type === 'INCOME' || t.type === 'SAVING' || t.type === 'INVESTMENT') return sum + amt;
+      if (t.type === 'EXPENSE') return sum - amt;
+      return sum;
+    }, 0);
+
+    let runningBalance = currentTotalAssets - totalNetChangeSinceStart;
+
+    // 4. Map buckets
     const data = buckets.map(b => {
-      const bucketTxns = txns.filter(t => {
+      const bucketTxns = allTxnsSinceStart.filter(t => {
         const d = new Date(t.date);
         return d >= b.start && d <= b.end;
       });
@@ -227,13 +275,19 @@ export class AnalyticsService {
       const saving = bucketTxns.filter(t => t.type === 'SAVING').reduce((s, t) => s + Number(t.amount), 0);
       const investment = bucketTxns.filter(t => t.type === 'INVESTMENT').reduce((s, t) => s + Number(t.amount), 0);
 
+      const netChange = income - expense + saving + investment;
+      runningBalance += netChange;
+
+      const isFuture = b.start > now;
+
       return {
         label: b.label,
-        income,
-        expense,
-        saving,
-        investment,
-        net: income - expense,
+        income: isFuture ? null : income,
+        expense: isFuture ? null : expense,
+        saving: isFuture ? null : saving,
+        investment: isFuture ? null : investment,
+        balance: isFuture ? null : runningBalance,
+        net: isFuture ? null : income - expense,
       };
     });
 
