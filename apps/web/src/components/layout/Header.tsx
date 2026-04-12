@@ -31,7 +31,7 @@ export default function Header({ title, subtitle }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-10 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700/50">
+    <header className="sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700/50">
       <div>
         <h1 className="text-xl font-bold text-slate-900 dark:text-white">{title}</h1>
         {subtitle && <p className="text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>}
