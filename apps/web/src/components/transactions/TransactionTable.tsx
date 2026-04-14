@@ -355,7 +355,7 @@ export default function TransactionTable() {
                       {t.type === 'EXPENSE' ? '-' : '+'}
                       <PrivacyMask 
                         value={formatCurrency(t.originalAmount, t.originalCurrency, false, false)} 
-                        category={(t.type === 'INVESTMENT' ? 'INVESTMENTS' : t.type === 'SAVING' ? 'SAVINGS' : t.type) as PrivacyCategory} 
+                        category={(t.type === 'INVESTMENT' ? 'INVESTMENT_DETAILS' : t.type === 'SAVING' ? 'SAVINGS_DETAILS' : t.type === 'INCOME' ? 'INCOME_DETAILS' : 'EXPENSE_DETAILS') as PrivacyCategory} 
                         id={t.id}
                       />
                     </div>
