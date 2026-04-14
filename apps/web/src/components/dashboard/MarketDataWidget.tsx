@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useMarketFavorites, useRefreshMarketData, useToggleMarketPreference } from '@/hooks/api/useMarketData';
 import { RefreshCw, DollarSign, Gem, TrendingUp, Plus, X, Calculator, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
@@ -22,6 +22,7 @@ export default function MarketDataWidget() {
   const { mutate: togglePreference } = useToggleMarketPreference();
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const scrollPosRef = useRef(0);
 
   // Calculator State
   const [calcPrice, setCalcPrice] = useState<number>(0);
@@ -73,8 +74,13 @@ export default function MarketDataWidget() {
     const mainContent = document.getElementById('main-content');
     if (!mainContent || !isExpanded) return;
 
+    // Record the scroll position at the moment of expansion
+    scrollPosRef.current = mainContent.scrollTop;
+
     const handleScroll = () => {
-      if (mainContent.scrollTop > 50) {
+      const currentScroll = mainContent.scrollTop;
+      // Only collapse if the user scrolls more than 20px from where they expanded
+      if (Math.abs(currentScroll - scrollPosRef.current) > 20) {
         setIsExpanded(false);
       }
     };
