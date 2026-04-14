@@ -74,19 +74,34 @@ export default function MarketDataWidget() {
     const mainContent = document.getElementById('main-content');
     if (!mainContent || !isExpanded) return;
 
-    // Record the scroll position at the moment of expansion
-    scrollPosRef.current = mainContent.scrollTop;
+    // Delay listener attachment to avoid catching layout-shift-induced scroll events
+    // that fire immediately when the widget expands and pushes content down.
+    const timer = setTimeout(() => {
+      // Capture scroll position AFTER layout has settled
+      scrollPosRef.current = mainContent.scrollTop;
 
-    const handleScroll = () => {
-      const currentScroll = mainContent.scrollTop;
-      // Only collapse if the user scrolls more than 20px from where they expanded
-      if (Math.abs(currentScroll - scrollPosRef.current) > 20) {
-        setIsExpanded(false);
+      const handleScroll = () => {
+        const currentScroll = mainContent.scrollTop;
+        // Only collapse if user scrolls more than 20px from where they expanded
+        if (Math.abs(currentScroll - scrollPosRef.current) > 20) {
+          setIsExpanded(false);
+        }
+      };
+
+      mainContent.addEventListener('scroll', handleScroll, { passive: true });
+      // Store cleanup on the ref so we can call it if effect re-runs early
+      (mainContent as any)._marketScrollCleanup = () =>
+        mainContent.removeEventListener('scroll', handleScroll);
+    }, 350);
+
+    return () => {
+      clearTimeout(timer);
+      const cleanup = (mainContent as any)._marketScrollCleanup;
+      if (cleanup) {
+        cleanup();
+        delete (mainContent as any)._marketScrollCleanup;
       }
     };
-
-    mainContent.addEventListener('scroll', handleScroll, { passive: true });
-    return () => mainContent.removeEventListener('scroll', handleScroll);
   }, [isExpanded]);
 
   if (isLoading) return (
