@@ -22,7 +22,8 @@ export default function MarketDataWidget() {
   const { mutate: togglePreference } = useToggleMarketPreference();
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const scrollPosRef = useRef(0);
+  const isScrollingRef = useRef(false);
+  const scrollEndTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Calculator State
   const [calcPrice, setCalcPrice] = useState<number>(0);
@@ -69,40 +70,29 @@ export default function MarketDataWidget() {
     }
   }, [calculatorOptions, calcPrice]);
 
-  // Auto-collapse on scroll
+  // Track scrolling state + auto-collapse when expanded
   useEffect(() => {
     const mainContent = document.getElementById('main-content');
-    if (!mainContent || !isExpanded) return;
+    if (!mainContent) return;
 
-    // Delay listener attachment to avoid catching layout-shift-induced scroll events
-    // that fire immediately when the widget expands and pushes content down.
-    const timer = setTimeout(() => {
-      // Capture scroll position AFTER layout has settled
-      scrollPosRef.current = mainContent.scrollTop;
+    const handleScroll = () => {
+      // Mark as scrolling and reset after 150ms of inactivity
+      isScrollingRef.current = true;
+      clearTimeout(scrollEndTimerRef.current);
+      scrollEndTimerRef.current = setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 150);
 
-      const handleScroll = () => {
-        const currentScroll = mainContent.scrollTop;
-        // Only collapse if user scrolls more than 20px from where they expanded
-        if (Math.abs(currentScroll - scrollPosRef.current) > 20) {
-          setIsExpanded(false);
-        }
-      };
-
-      mainContent.addEventListener('scroll', handleScroll, { passive: true });
-      // Store cleanup on the ref so we can call it if effect re-runs early
-      (mainContent as any)._marketScrollCleanup = () =>
-        mainContent.removeEventListener('scroll', handleScroll);
-    }, 350);
-
-    return () => {
-      clearTimeout(timer);
-      const cleanup = (mainContent as any)._marketScrollCleanup;
-      if (cleanup) {
-        cleanup();
-        delete (mainContent as any)._marketScrollCleanup;
-      }
+      // Collapse if user scrolls while expanded
+      setIsExpanded(false);
     };
-  }, [isExpanded]);
+
+    mainContent.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      mainContent.removeEventListener('scroll', handleScroll);
+      clearTimeout(scrollEndTimerRef.current);
+    };
+  }, []);
 
   if (isLoading) return (
     <div className="bg-slate-950/40 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-8 flex items-center justify-center min-h-[140px]">
@@ -213,7 +203,11 @@ export default function MarketDataWidget() {
     <div className="w-full bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-white/5 transition-all duration-300">
       <div 
         className="px-6 py-2 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors"
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={() => {
+          // Block expand if the page is currently scrolling
+          if (isScrollingRef.current) return;
+          setIsExpanded(prev => !prev);
+        }}
       >
         <div className="flex items-center gap-3 shrink-0">
           <div className="w-7 h-7 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500">
