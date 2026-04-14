@@ -28,7 +28,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default function TransactionTable() {
-  const { isCategoryHidden, toggleCategory, toggleIdVisibility, isIdVisible } = usePrivacy();
+  const { isCategoryHidden, toggleCategory, toggleIdVisibility, isIdVisible, clearForceVisibleIds } = usePrivacy();
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterCat, setFilterCat] = useState('');
@@ -140,6 +140,8 @@ export default function TransactionTable() {
           </button>
           <button
             onClick={() => {
+              // Clear all per-row overrides first so global state is authoritative
+              clearForceVisibleIds();
               toggleCategory('INCOME_DETAILS');
               toggleCategory('EXPENSE_DETAILS');
               toggleCategory('SAVINGS_DETAILS');

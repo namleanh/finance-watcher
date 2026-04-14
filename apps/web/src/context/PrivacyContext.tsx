@@ -10,6 +10,7 @@ interface PrivacyContextValue {
   forceVisibleIds: Record<string, boolean>;
   toggleCategory: (category: PrivacyCategory) => void;
   toggleIdVisibility: (id: string) => void;
+  clearForceVisibleIds: () => void;
   isCategoryHidden: (category: PrivacyCategory) => boolean;
   isIdVisible: (id: string) => boolean;
   maskValue: (value: string, category: PrivacyCategory, id?: string) => string;
@@ -33,6 +34,7 @@ const PrivacyContext = createContext<PrivacyContextValue>({
   forceVisibleIds: {},
   toggleCategory: () => {},
   toggleIdVisibility: () => {},
+  clearForceVisibleIds: () => {},
   isCategoryHidden: () => true,
   isIdVisible: () => false,
   maskValue: (v) => v,
@@ -63,6 +65,10 @@ export function PrivacyProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
+  const clearForceVisibleIds = () => {
+    setForceVisibleIds({});
+  };
+
   const isCategoryHidden = (category: PrivacyCategory) => {
     return privacySettings[category];
   };
@@ -86,6 +92,7 @@ export function PrivacyProvider({ children }: { children: React.ReactNode }) {
       forceVisibleIds,
       toggleCategory, 
       toggleIdVisibility,
+      clearForceVisibleIds,
       isCategoryHidden, 
       isIdVisible,
       maskValue 
