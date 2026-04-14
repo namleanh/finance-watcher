@@ -34,26 +34,26 @@ export function formatCurrency(
   compact = false,
   round = true
 ): string {
-  if (currency === 'VND' && compact) {
-    if (Math.abs(amount) >= 1_000_000_000) {
-      const val = amount / 1_000_000_000;
-      return `${Number(val.toFixed(1))}B\u00A0đ`;
-    }
-    if (Math.abs(amount) >= 1_000_000) {
-      const val = amount / 1_000_000;
-      return `${Number(val.toFixed(1))}tr\u00A0đ`;
-    }
-    if (Math.abs(amount) >= 1_000) {
-      const val = amount / 1_000;
-      return `${Number(val.toFixed(1))}k\u00A0đ`;
-    }
-    return `${round ? Math.round(amount) : amount.toLocaleString('en-US', { maximumFractionDigits: 2 })}\u00A0đ`;
-  }
-
   const symbols: Record<Currency, string> = { 
     VND: 'đ', USD: '$', MYR: 'RM', EUR: '€', JPY: '¥', GBP: '£', AUD: 'A$', SGD: 'S$', KRW: '₩' 
   };
-  const sym = symbols[currency];
+  const sym = symbols[currency] ?? currency;
+  const abs = Math.abs(amount);
+  const sign = amount < 0 ? '-' : '';
+
+  if (compact) {
+    if (currency === 'VND') {
+      if (abs >= 1_000_000_000) return `${sign}${Number((abs / 1_000_000_000).toFixed(1))}B\u00A0đ`;
+      if (abs >= 1_000_000)     return `${sign}${Number((abs / 1_000_000).toFixed(1))}tr\u00A0đ`;
+      if (abs >= 1_000)         return `${sign}${Number((abs / 1_000).toFixed(1))}k\u00A0đ`;
+      return `${sign}${round ? Math.round(abs) : abs.toLocaleString('en-US', { maximumFractionDigits: 2 })}\u00A0đ`;
+    }
+    // Generic compact for other currencies (USD, MYR, etc.)
+    if (abs >= 1_000_000_000) return `${sign}${sym}${Number((abs / 1_000_000_000).toFixed(2))}B`;
+    if (abs >= 1_000_000)     return `${sign}${sym}${Number((abs / 1_000_000).toFixed(2))}M`;
+    if (abs >= 1_000)         return `${sign}${sym}${Number((abs / 1_000).toFixed(1))}K`;
+    return `${sign}${sym}${round ? abs.toFixed(2) : abs.toLocaleString('en-US', { maximumFractionDigits: 4 })}`;
+  }
 
   if (currency === 'VND') {
     const formatted = round 

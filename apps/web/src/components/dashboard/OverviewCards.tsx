@@ -5,10 +5,12 @@ import { TrendingUp, TrendingDown, PiggyBank, Briefcase } from 'lucide-react';
 import { useDashboardSummary } from '@/hooks/api/useAnalytics';
 import { formatCurrency } from '@/lib/exchangeRate';
 import { StatCard } from '@/components/shared/StatCard';
-import { usePrivacy } from '@/context/PrivacyContext';
+import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
+import { Currency } from '@/lib/types';
 
 export default function OverviewCards() {
   const { data: stats, isLoading } = useDashboardSummary();
+  const { fromVND, baseCurrency } = useCurrencyConverter();
 
   if (isLoading || !stats) {
     return (
@@ -20,11 +22,15 @@ export default function OverviewCards() {
     );
   }
 
+  // Stats from backend are in VND; convert to the user's base currency for display
+  const bc = baseCurrency as Currency;
+  const fmt = (n: number) => formatCurrency(fromVND(n, bc), bc, false);
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <StatCard
         title="Tổng tài sản"
-        value={formatCurrency(stats.totalAssets, 'VND', false)}
+        value={fmt(stats.totalAssets)}
         icon={<TrendingUp size={20} />}
         gradient="bg-gradient-to-br from-indigo-500 to-violet-600"
         sub="Tổng tích lũy"
@@ -32,17 +38,17 @@ export default function OverviewCards() {
       />
       <StatCard
         title="Chi tiêu tháng này"
-        value={formatCurrency(stats.thisMonth.expense, 'VND', false)}
+        value={fmt(stats.thisMonth.expense)}
         change={stats.thisMonth.expenseChange}
         icon={<TrendingDown size={20} />}
         gradient="bg-gradient-to-br from-rose-500 to-pink-600"
-        sub={`Thu nhập: ${formatCurrency(stats.thisMonth.income, 'VND', false)}`}
+        sub={`Thu nhập: ${fmt(stats.thisMonth.income)}`}
         privacyCategory="EXPENSE"
         subPrivacyCategory="INCOME"
       />
       <StatCard
         title="Tổng tiết kiệm"
-        value={formatCurrency(stats.totalDeposits, 'VND', false)}
+        value={fmt(stats.totalDeposits)}
         icon={<PiggyBank size={20} />}
         gradient="bg-gradient-to-br from-emerald-500 to-teal-600"
         sub={`Tiến độ mục tiêu: ${stats.savingPercent.toFixed(0)}%`}
@@ -51,7 +57,7 @@ export default function OverviewCards() {
       />
       <StatCard
         title="Danh mục đầu tư"
-        value={formatCurrency(stats.portfolioValue, 'VND', false)}
+        value={fmt(stats.portfolioValue)}
         icon={<Briefcase size={20} />}
         gradient="bg-gradient-to-br from-amber-500 to-orange-600"
         privacyCategory="INVESTMENTS"

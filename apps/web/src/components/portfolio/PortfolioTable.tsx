@@ -239,6 +239,9 @@ export default function PortfolioTable() {
   const [editing, setEditing] = useState<PortfolioAsset | undefined>();
   const [selectedAsset, setSelectedAsset] = useState<PortfolioAsset | null>(null);
   const { isCategoryHidden, toggleCategory, toggleIdVisibility, isIdVisible } = usePrivacy();
+  const { fromVND, baseCurrency } = useCurrencyConverter();
+  const bc = baseCurrency as Currency;
+  const fmtB = (n: number) => formatCurrency(fromVND(n, bc), bc, false);
 
   if (isLoading) {
     return (
@@ -254,21 +257,21 @@ export default function PortfolioTable() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
           title="Tổng giá vốn"
-          value={formatCurrency(summary.totalCost, 'VND', false)}
+          value={fmtB(summary.totalCost)}
           icon={<Banknote size={20} />}
           gradient="bg-gradient-to-br from-slate-500 to-slate-600"
           privacyCategory="INVESTMENTS"
         />
         <StatCard
           title="Tổng thị giá"
-          value={formatCurrency(summary.totalValue, 'VND', false)}
+          value={fmtB(summary.totalValue)}
           icon={<Briefcase size={20} />}
           gradient="bg-gradient-to-br from-indigo-500 to-violet-600"
           privacyCategory="INVESTMENTS"
         />
         <StatCard
           title="Lãi / Lỗ (P&L)"
-          value={`${summary.pnl >= 0 ? '+' : ''}${formatCurrency(Math.abs(summary.pnl), 'VND', false)} (${summary.pnlPct.toFixed(2)}%)`}
+          value={`${summary.pnl >= 0 ? '+' : ''}${fmtB(Math.abs(summary.pnl))} (${summary.pnlPct.toFixed(2)}%)`}
           icon={summary.pnl >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
           gradient={summary.pnl >= 0 ? "bg-gradient-to-br from-emerald-500 to-teal-600" : "bg-gradient-to-br from-rose-500 to-orange-600"}
           privacyCategory="INVESTMENTS"

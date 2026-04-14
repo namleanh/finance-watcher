@@ -5,10 +5,11 @@ import { Plus, Trash2, Edit2, Target } from 'lucide-react';
 import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal } from '@/hooks/api/useGoals';
 import { formatCurrency } from '@/lib/exchangeRate';
 import { getGoalProgress } from '@/lib/financeUtils';
-import { SavingsGoal } from '@/lib/types';
+import { SavingsGoal, Currency } from '@/lib/types';
 import { GOAL_COLORS, GOAL_ICONS } from '@/lib/constants';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import CurrencyInput from '../shared/CurrencyInput';
+import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
 
 function GoalModal({ open, onClose, editing }: { open: boolean; onClose: () => void; editing?: SavingsGoal }) {
   const { mutateAsync: createGoal } = useCreateGoal();
@@ -111,6 +112,7 @@ function GoalModal({ open, onClose, editing }: { open: boolean; onClose: () => v
 export default function GoalCards() {
   const { data: goals = [], isLoading } = useGoals();
   const { mutate: deleteGoal } = useDeleteGoal();
+  const { fromVND, baseCurrency } = useCurrencyConverter();
   
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<SavingsGoal | undefined>();
@@ -194,15 +196,15 @@ export default function GoalCards() {
                     />
                   </div>
                   <div className="flex justify-between text-xs text-slate-400">
-                    <span>{formatCurrency(goal.currentAmount, 'VND', false)}</span>
-                    <span>{formatCurrency(goal.targetAmount, 'VND', false)}</span>
+                    <span>{formatCurrency(fromVND(goal.currentAmount, baseCurrency as Currency), baseCurrency as Currency, false)}</span>
+                    <span>{formatCurrency(fromVND(goal.targetAmount, baseCurrency as Currency), baseCurrency as Currency, false)}</span>
                   </div>
                 </div>
 
                 <div className="mt-3 pt-3 border-t border-slate-700/50 flex justify-between text-xs text-slate-400">
                   <span>Hạn: {goal.deadline ? format(parseISO(goal.deadline), 'dd/MM/yyyy') : 'Không hạn'}</span>
                   <span style={{ color: goal.color }}>
-                    Cần thêm {formatCurrency(Math.max(0, goal.targetAmount - goal.currentAmount), 'VND', false)}
+                    Cần thêm {formatCurrency(fromVND(Math.max(0, goal.targetAmount - goal.currentAmount), baseCurrency as Currency), baseCurrency as Currency, false)}
                   </span>
                 </div>
               </div>
