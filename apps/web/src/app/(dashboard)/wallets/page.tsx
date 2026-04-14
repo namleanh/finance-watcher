@@ -217,7 +217,7 @@ export default function WalletsPage() {
   const [editWallet, setEditWallet] = useState<WalletType | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedWallet, setSelectedWallet] = useState<WalletType | null>(null);
-  const { isCategoryHidden, toggleCategory, toggleIdVisibility, isIdVisible } = usePrivacy();
+  const { isCategoryHidden, toggleCategory, toggleIdVisibility, isIdVisible, clearForceVisibleIds } = usePrivacy();
 
   const totalBalance = wallets.reduce((s, w) => s + toVND(w.balance, w.currency as Currency), 0);
 
@@ -242,7 +242,13 @@ export default function WalletsPage() {
                 category="NET_WORTH" 
               />
             </div>
-
+            <button
+              onClick={() => toggleCategory('NET_WORTH')}
+              className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              title={isCategoryHidden('NET_WORTH') ? 'Hiện tổng số dư' : 'Ẩn tổng số dư'}
+            >
+              {isCategoryHidden('NET_WORTH') ? <Eye size={18} /> : <EyeOff size={18} />}
+            </button>
           </div>
           <p className="text-sm text-indigo-200 mt-2">{wallets.length} ví đang hoạt động</p>
         </div>
@@ -252,7 +258,10 @@ export default function WalletsPage() {
           <h2 className="text-base font-semibold text-slate-900 dark:text-white">Danh sách ví</h2>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => toggleCategory('NET_WORTH_DETAILS')}
+              onClick={() => {
+                toggleCategory('NET_WORTH_DETAILS');
+                clearForceVisibleIds();
+              }}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${!isCategoryHidden('NET_WORTH_DETAILS') ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-500/20' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50'}`}
             >
               {isCategoryHidden('NET_WORTH_DETAILS') ? <Eye size={16} /> : <EyeOff size={16} />}
@@ -312,16 +321,6 @@ export default function WalletsPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          toggleIdVisibility(wallet.id);
-                        }}
-                        className={`p-2.5 rounded-lg transition-colors ${isIdVisible(wallet.id) ? 'text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10' : 'text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10'}`}
-                        title={isIdVisible(wallet.id) ? 'Ẩn số tiền ví này' : 'Hiện số tiền ví này'}
-                      >
-                        {isIdVisible(wallet.id) ? <Eye size={16} /> : <EyeOff size={16} />}
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
                           setEditWallet(wallet);
                           setShowModal(true);
                         }}
@@ -344,12 +343,24 @@ export default function WalletsPage() {
                   </div>
 
                   <div className="mt-4">
-                    <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                      <PrivacyMask 
-                        value={formatCurrency(wallet.balance, wallet.currency as Currency, false)} 
-                        category="NET_WORTH_DETAILS" 
-                        id={wallet.id}
-                      />
+                    <div className="flex items-center gap-2">
+                      <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                        <PrivacyMask 
+                          value={formatCurrency(wallet.balance, wallet.currency as Currency, false)} 
+                          category="NET_WORTH_DETAILS" 
+                          id={wallet.id}
+                        />
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleIdVisibility(wallet.id);
+                        }}
+                        className={`p-1.5 rounded-lg transition-colors shrink-0 ${isIdVisible(wallet.id) ? 'text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10' : 'text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10'}`}
+                        title={isIdVisible(wallet.id) ? 'Ẩn số tiền ví này' : 'Hiện số tiền ví này'}
+                      >
+                        {isIdVisible(wallet.id) ? <Eye size={15} /> : <EyeOff size={15} />}
+                      </button>
                     </div>
                     {wallet.currency !== 'VND' && (
                       <div className="text-[11px] font-medium text-indigo-500 mt-0.5">
@@ -365,15 +376,6 @@ export default function WalletsPage() {
                 </div>
               );
             })}
-          </div>
-        )}
-
-        {/* Delete note */}
-        {wallets.length > 0 && (
-          <div className="rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 p-4">
-            <p className="text-xs text-amber-700 dark:text-amber-400">
-              <strong>Lưu ý khi xóa ví:</strong> Các giao dịch đã liên kết với ví sẽ không bị mất, chúng sẽ chuyển sang trạng thái "không có ví".
-            </p>
           </div>
         )}
       </div>
