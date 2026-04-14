@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ArrowLeftRight, PieChart, Target, ChevronLeft, ChevronRight, Moon, Sun, Wallet, CreditCard, Landmark, X, LogOut } from 'lucide-react';
+import { LayoutDashboard, ArrowLeftRight, PieChart, Target, ChevronLeft, ChevronRight, Moon, Sun, Wallet, CreditCard, Landmark, X, LogOut, Info } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useRouter } from 'next/navigation';
 import { useUser, useLogout } from '@/hooks/api/useAuth';
@@ -87,6 +87,21 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               </Link>
             );
           })}
+          
+          {/* Mobile-only About Link */}
+          <Link
+            href="/about"
+            onClick={onClose}
+            className={`md:hidden flex items-center gap-3 px-3 py-3.5 rounded-xl text-sm font-medium transition-all duration-200
+              ${pathname === '/about'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+              }
+            `}
+          >
+            <Info size={18} className="shrink-0" />
+            <span>Về chúng tôi</span>
+          </Link>
         </nav>
 
         {/* Bottom controls */}
@@ -120,6 +135,15 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <LogOut size={14} />
                 <span>Đăng xuất</span>
               </button>
+              
+              <Link 
+                href="/about"
+                className="flex items-center gap-2 mt-1 w-full px-3 py-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 rounded-xl transition-colors text-xs font-medium"
+                title="Về chúng tôi"
+              >
+                <Info size={14} />
+                <span>Về chúng tôi</span>
+              </Link>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-4 py-2">
@@ -137,6 +161,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               >
                 <LogOut size={18} />
               </button>
+              <Link 
+                href="/about"
+                className="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 rounded-xl transition-colors"
+                title="Về chúng tôi"
+              >
+                <Info size={18} />
+              </Link>
             </div>
           )}
 
