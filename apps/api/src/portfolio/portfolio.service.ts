@@ -136,6 +136,7 @@ export class PortfolioService {
         currency: dto.currency,
         purchaseDate: dto.purchaseDate ? new Date(dto.purchaseDate) : undefined,
         notes: dto.notes,
+        walletId: dto.walletId,
       },
     });
     return this.serialize(a);

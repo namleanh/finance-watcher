@@ -13,6 +13,7 @@ import { Currency } from '@/lib/types';
 interface Props {
   deposit: SavingsDeposit | null;
   onClose: () => void;
+  onEdit?: (deposit: SavingsDeposit) => void;
   onDelete?: (id: string) => void;
   onWithdraw?: (id: string) => void;
 }
@@ -23,7 +24,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   WITHDRAWN: { label: 'Đã rút', color: 'text-slate-500 bg-slate-500/10' },
 };
 
-export default function SavingsDetailModal({ deposit, onClose, onDelete, onWithdraw }: Props) {
+export default function SavingsDetailModal({ deposit, onClose, onEdit, onDelete, onWithdraw }: Props) {
   const { maskValue } = usePrivacy();
   useBodyScrollLock(!!deposit);
 
@@ -164,6 +165,14 @@ export default function SavingsDetailModal({ deposit, onClose, onDelete, onWithd
                   className="flex-1 py-3 rounded-xl border border-rose-100 dark:border-rose-900/30 text-rose-500 text-[10px] font-bold hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-all flex items-center justify-center gap-1.5"
                 >
                   <Trash2 size={12} /> Xóa sổ
+                </button>
+              )}
+              {onEdit && (
+                <button 
+                  onClick={() => { if (deposit) { onEdit(deposit); onClose(); } }}
+                  className="flex-1 py-3 rounded-xl border border-indigo-100 dark:border-indigo-900/30 text-indigo-500 text-[10px] font-bold hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-all flex items-center justify-center gap-1.5"
+                >
+                  <Clock size={12} /> Sửa sổ
                 </button>
               )}
               <button 

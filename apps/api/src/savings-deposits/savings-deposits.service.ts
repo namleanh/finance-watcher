@@ -99,7 +99,7 @@ export class SavingsDepositsService {
             originalAmount: depositAmount,
             originalCurrency: walletCurrency,
             category: encryptField('Tiết kiệm', userId) || 'Tiết kiệm',
-            date: depositDate,
+            date: new Date(),
             notes: encryptField(`Gửi tiết kiệm: ${dto.bankName}`, userId) || `Gửi tiết kiệm: ${dto.bankName}`,
             savingsDepositId: deposit.id,
           },
@@ -132,6 +132,7 @@ export class SavingsDepositsService {
         depositDate: dto.depositDate ? new Date(dto.depositDate) : undefined,
         status: dto.status,
         notes: dto.notes,
+        walletId: dto.walletId,
       },
     });
     return this.serialize(deposit);
@@ -161,7 +162,7 @@ export class SavingsDepositsService {
     });
   }
 
-  async withdraw(id: string, userId: string) {
+  async withdraw(id: string, userId: string, destinationWalletId?: string) {
     const d = await this.prisma.savingsDeposit.findUnique({
       where: { id },
       include: { wallet: true },
@@ -170,28 +171,47 @@ export class SavingsDepositsService {
     if (d.userId !== userId) throw new ForbiddenException();
     if (d.status === 'WITHDRAWN') throw new BadRequestException('Sổ tiết kiệm này đã được tất toán');
 
-    // Calculate interest using the same logic as serialize
+    const targetWalletId = destinationWalletId || d.walletId;
+    if (!targetWalletId) {
+      throw new BadRequestException('Vui lòng chọn ví nhận tiền để tất toán sổ này (do ví gốc đã bị xóa hoặc chưa được thiết lập)');
+    }
+
+    // Verify target wallet exists and belongs to user
+    const targetWallet = await this.prisma.wallet.findUnique({ where: { id: targetWalletId } });
+    if (!targetWallet || targetWallet.userId !== userId) {
+      throw new ForbiddenException('Ví nhận tiền không tồn tại hoặc không thuộc quyền sở hữu của bạn');
+    }
+
+    // Calculate interest - only if maturity date has been reached
     const depositAmount = Number(d.depositAmount);
     const interestRate = Number(d.interestRate);
     const termMonths = d.termMonths;
-    const interestEarned = Math.round(depositAmount * (interestRate / 100) * (termMonths / 12));
+    const isMatured = new Date() >= new Date(d.maturityDate);
+    const interestEarned = isMatured
+      ? Math.round(depositAmount * (interestRate / 100) * (termMonths / 12))
+      : 0;
     const totalRefund = depositAmount + interestEarned;
 
     return this.prisma.$transaction(async (tx) => {
-      // 1. Update wallet balance if target wallet exists
-      if (d.walletId) {
-        await tx.wallet.update({
-          where: { id: d.walletId },
-          data: { balance: { increment: totalRefund } },
-        });
+      // 0. Verify currency matching
+      if (targetWallet.currency !== d.currency) {
+        throw new BadRequestException(`Tiền tệ của ví nhận tiền (${targetWallet.currency}) không khớp với đơn vị tiền tệ của sổ tiết kiệm (${d.currency}). Vui lòng chọn ví phù hợp.`);
+      }
 
-        // 2. Create an INCOME transaction for the interest
+      // 1. Update wallet balance
+      await tx.wallet.update({
+        where: { id: targetWalletId },
+        data: { balance: { increment: totalRefund } },
+      });
+
+      // 2. Create an INCOME transaction for the interest (only if matured)
+      if (isMatured && interestEarned > 0) {
         await tx.transaction.create({
           data: {
             userId,
-            walletId: d.walletId,
+            walletId: targetWalletId,
             type: 'INCOME',
-            amount: interestEarned, // Stored in wallet currency/equivalent
+            amount: interestEarned,
             originalAmount: interestEarned,
             originalCurrency: d.currency || 'VND',
             category: encryptField('Lãi tiết kiệm', userId) || 'Lãi tiết kiệm',
@@ -207,7 +227,7 @@ export class SavingsDepositsService {
         where: { id },
         data: { status: 'WITHDRAWN' },
         include: {
-          wallet: { select: { id: true, name: true } },
+          wallet: { select: { id: true, name: true, currency: true } },
           transactions: { select: { id: true } },
         },
       });

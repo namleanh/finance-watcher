@@ -14,6 +14,7 @@ import CurrencyInput from '@/components/shared/CurrencyInput';
 import { usePrivacy } from '@/context/PrivacyContext';
 import PrivacyMask from '@/components/shared/PrivacyMask';
 import WalletDetailModal from '@/components/shared/WalletDetailModal';
+import ErrorModal from '@/components/shared/ErrorModal';
 
 const WALLET_ICONS: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
   CASH: { icon: Coins, color: 'text-amber-500', bg: 'bg-amber-500/10' },
@@ -217,13 +218,22 @@ export default function WalletsPage() {
   const [editWallet, setEditWallet] = useState<WalletType | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedWallet, setSelectedWallet] = useState<WalletType | null>(null);
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const { isCategoryHidden, toggleCategory, toggleIdVisibility, isIdVisible, clearForceVisibleIds } = usePrivacy();
 
   const totalBalance = wallets.reduce((s, w) => s + toVND(w.balance, w.currency as Currency), 0);
 
   const handleDelete = () => {
     if (deleteId) {
-      deleteWallet(deleteId, { onSuccess: () => setDeleteId(null) });
+      deleteWallet(deleteId, { 
+        onSuccess: () => setDeleteId(null),
+        onError: (error: any) => {
+          setDeleteId(null);
+          setErrorMessage(error.response?.data?.message || 'Không thể xóa ví này. Vui lòng kiểm tra lại.');
+          setErrorModalOpen(true);
+        }
+      });
     }
   };
 
@@ -401,6 +411,12 @@ export default function WalletsPage() {
         onClose={() => setDeleteId(null)}
         onConfirm={handleDelete}
         isLoading={isDeleting}
+      />
+
+      <ErrorModal
+        open={errorModalOpen}
+        onClose={() => setErrorModalOpen(false)}
+        message={errorMessage}
       />
     </div>
   );

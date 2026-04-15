@@ -181,7 +181,7 @@ function AddAssetModal({ open, onClose, editing }: { open: boolean; onClose: () 
               <select 
                 value={walletId} 
                 onChange={e => setWalletId(e.target.value)} 
-                disabled={!!editing || compatibleWallets.length === 0}
+                disabled={compatibleWallets.length === 0}
                 className="w-full bg-white border border-slate-200 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 shadow-sm transition-all"
               >
                 <option value="">{compatibleWallets.length === 0 ? '-- Không có ví phù hợp --' : '-- Chọn ví --'}</option>

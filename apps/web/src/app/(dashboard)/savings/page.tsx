@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Plus, Trash2, Banknote, TrendingUp, Clock, X, Landmark, PiggyBank, Eye, EyeOff } from 'lucide-react';
-import { useSavingsDeposits, useCreateSavingsDeposit, useDeleteSavingsDeposit, useWithdrawSavingsDeposit, SavingsDeposit } from '@/hooks/api/useSavingsDeposits';
+import { useSavingsDeposits, useCreateSavingsDeposit, useUpdateSavingsDeposit, useDeleteSavingsDeposit, useWithdrawSavingsDeposit, SavingsDeposit } from '@/hooks/api/useSavingsDeposits';
 import { useWallets } from '@/hooks/api/useWallets';
 import { formatCurrency } from '@/lib/exchangeRate';
 import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
@@ -36,22 +36,42 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   WITHDRAWN: { label: 'Đã rút', className: 'text-slate-500 bg-slate-500/10' },
 };
 
-interface AddModalProps {
+interface DepositModalProps {
   open: boolean;
   onClose: () => void;
+  editing?: SavingsDeposit;
 }
 
-function AddDepositModal({ open, onClose }: AddModalProps) {
-  const { mutateAsync: create, isPending } = useCreateSavingsDeposit();
+function DepositModal({ open, onClose, editing }: DepositModalProps) {
+  const { mutateAsync: create, isPending: isCreating } = useCreateSavingsDeposit();
+  const { mutateAsync: update, isPending: isUpdating } = useUpdateSavingsDeposit();
+  const isPending = isCreating || isUpdating;
   const { data: wallets = [] } = useWallets();
   useBodyScrollLock(open);
-  const [bankName, setBankName] = useState('');
-  const [amount, setAmount] = useState('');
-  const [termMonths, setTermMonths] = useState(6);
-  const [interestRate, setInterestRate] = useState('');
-  const [depositDate, setDepositDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [notes, setNotes] = useState('');
-  const [walletId, setWalletId] = useState('');
+
+  const [bankName, setBankName] = useState(editing?.bankName ?? '');
+  const [amount, setAmount] = useState(editing?.depositAmount.toString() ?? '');
+  const [termMonths, setTermMonths] = useState(editing?.termMonths ?? 6);
+  const [interestRate, setInterestRate] = useState(editing?.interestRate.toString() ?? '');
+  const [depositDate, setDepositDate] = useState(editing?.depositDate ? format(parseISO(editing.depositDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
+  const [notes, setNotes] = useState(editing?.notes ?? '');
+  const [walletId, setWalletId] = useState(editing?.walletId ?? '');
+
+  // Update states when editing changes
+  React.useEffect(() => {
+    if (editing) {
+      setBankName(editing.bankName);
+      setAmount(editing.depositAmount.toString());
+      setTermMonths(editing.termMonths);
+      setInterestRate(editing.interestRate.toString());
+      setDepositDate(format(parseISO(editing.depositDate), 'yyyy-MM-dd'));
+      setNotes(editing.notes ?? '');
+      setWalletId(editing.walletId ?? '');
+    } else {
+      setBankName(''); setAmount(''); setTermMonths(6); setInterestRate(''); 
+      setDepositDate(format(new Date(), 'yyyy-MM-dd')); setNotes(''); setWalletId('');
+    }
+  }, [editing, open]);
 
   // Derived currency from selected wallet
   const selectedWallet = wallets.find(w => w.id === walletId);
@@ -73,17 +93,29 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await create({
-        bankName,
-        depositAmount: parseFloat(amount),
-        termMonths,
-        interestRate: parseFloat(interestRate),
-        depositDate: new Date(depositDate).toISOString(),
-        currency,
-        notes,
-        walletId,
-      });
-      setBankName(''); setAmount(''); setInterestRate(''); setNotes(''); setWalletId('');
+      if (editing) {
+        await update({
+          id: editing.id,
+          bankName,
+          depositAmount: parseFloat(amount),
+          termMonths,
+          interestRate: parseFloat(interestRate),
+          depositDate: new Date(depositDate).toISOString(),
+          notes,
+          walletId,
+        });
+      } else {
+        await create({
+          bankName,
+          depositAmount: parseFloat(amount),
+          termMonths,
+          interestRate: parseFloat(interestRate),
+          depositDate: new Date(depositDate).toISOString(),
+          currency,
+          notes,
+          walletId,
+        });
+      }
       onClose();
     } catch (err) {
       console.error(err);
@@ -98,7 +130,7 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-2">
             <Landmark size={18} className="text-indigo-500" />
-            <h2 className="font-semibold text-slate-900 dark:text-white">Thêm sổ tiết kiệm</h2>
+            <h2 className="font-semibold text-slate-900 dark:text-white">{editing ? 'Cập nhật sổ tiết kiệm' : 'Thêm sổ tiết kiệm'}</h2>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors p-1">
             <X size={20} />
@@ -230,7 +262,7 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
             type="submit" disabled={isPending || isInsufficient}
             className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-semibold text-sm hover:from-indigo-600 hover:to-violet-700 transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50 mt-2"
           >
-            {isPending ? 'Đang lưu...' : 'Thêm sổ tiết kiệm'}
+            {isPending ? 'Đang lưu...' : editing ? 'Cập nhật sổ' : 'Thêm sổ tiết kiệm'}
           </button>
         </form>
       </div>
@@ -243,10 +275,11 @@ export default function SavingsDepositsPage() {
   const { mutate: deleteDeposit, isPending: isDeleting } = useDeleteSavingsDeposit();
   const { toVND } = useCurrencyConverter();
   const [showModal, setShowModal] = useState(false);
+  const [editingDeposit, setEditingDeposit] = useState<SavingsDeposit | undefined>();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedDeposit, setSelectedDeposit] = useState<SavingsDeposit | null>(null);
   const { mutate: withdrawDeposit, isPending: isWithdrawing } = useWithdrawSavingsDeposit();
-  const [withdrawId, setWithdrawId] = useState<string | null>(null);
+  const [withdrawDepositObj, setWithdrawDepositObj] = useState<SavingsDeposit | null>(null);
   const { isCategoryHidden, toggleCategory, toggleIdVisibility, isIdVisible } = usePrivacy();
 
   const totalDeposited = deposits
@@ -418,15 +451,28 @@ export default function SavingsDepositsPage() {
                                 {isIdVisible(d.id) ? <Eye size={16} /> : <EyeOff size={16} />}
                               </button>
                               {d.status !== 'WITHDRAWN' && (
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setWithdrawId(d.id);
-                                  }} 
-                                  className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white text-[10px] font-bold transition-all uppercase tracking-tighter"
-                                >
-                                  Tất toán
-                                </button>
+                                <div className="flex items-center gap-1">
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingDeposit(d);
+                                      setShowModal(true);
+                                    }}
+                                    className="p-2 text-slate-400 hover:text-indigo-500 transition-colors"
+                                    title="Chỉnh sửa"
+                                  >
+                                    <Clock size={16} />
+                                  </button>
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setWithdrawDepositObj(d);
+                                    }} 
+                                    className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white text-[10px] font-bold transition-all uppercase tracking-tighter"
+                                  >
+                                    Tất toán
+                                  </button>
+                                </div>
                               )}
                             </div>
                           </td>
@@ -463,7 +509,7 @@ export default function SavingsDepositsPage() {
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
-                              setWithdrawId(d.id);
+                              setWithdrawDepositObj(d);
                             }}
                             className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 active:bg-emerald-500 active:text-white text-[10px] font-bold transition-all uppercase tracking-tighter shadow-sm"
                           >
@@ -514,19 +560,31 @@ export default function SavingsDepositsPage() {
         </div>
       </div>
 
-      <AddDepositModal open={showModal} onClose={() => setShowModal(false)} />
+      <DepositModal 
+        open={showModal} 
+        onClose={() => { setShowModal(false); setEditingDeposit(undefined); }} 
+        editing={editingDeposit}
+      />
 
       <SavingsDetailModal
         deposit={selectedDeposit}
         onClose={() => setSelectedDeposit(null)}
+        onEdit={(deposit) => {
+          setEditingDeposit(deposit);
+          setShowModal(true);
+        }}
         onDelete={(id) => setDeleteId(id)}
-        onWithdraw={(id) => setWithdrawId(id)}
+        onWithdraw={(id) => setWithdrawDepositObj(deposits.find(d => d.id === id) || null)}
       />
 
       <WithdrawConfirmModal
-        open={!!withdrawId}
-        onClose={() => setWithdrawId(null)}
-        onConfirm={() => { if (withdrawId) withdrawDeposit(withdrawId, { onSuccess: () => setWithdrawId(null) }); }}
+        open={!!withdrawDepositObj}
+        onClose={() => setWithdrawDepositObj(null)}
+        onConfirm={(targetWalletId) => { 
+          if (withdrawDepositObj) withdrawDeposit({ id: withdrawDepositObj.id, destinationWalletId: targetWalletId }, { onSuccess: () => setWithdrawDepositObj(null) }); 
+        }}
+        defaultWalletId={withdrawDepositObj?.walletId}
+        currency={withdrawDepositObj?.currency}
         isLoading={isWithdrawing}
       />
 

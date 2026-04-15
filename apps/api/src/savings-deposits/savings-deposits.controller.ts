@@ -34,7 +34,11 @@ export class SavingsDepositsController {
   }
 
   @Patch(':id/withdraw')
-  withdraw(@Param('id') id: string, @Request() req) {
-    return this.service.withdraw(id, req.user.id);
+  withdraw(
+    @Param('id') id: string, 
+    @Body('destinationWalletId') destinationWalletId: string, 
+    @Request() req
+  ) {
+    return this.service.withdraw(id, req.user.id, destinationWalletId);
   }
 }

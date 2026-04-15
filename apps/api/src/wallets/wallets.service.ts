@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateWalletDto, UpdateWalletDto } from './dto/wallet.dto';
 import { encryptField, decryptField, generateBlindIndex } from '../utils/crypto.util';
@@ -57,6 +57,23 @@ export class WalletsService {
 
   async remove(id: string, userId: string) {
     await this.findOne(id, userId);
+
+    // Check for active dependencies
+    const [activeSavings, activeAssets] = await Promise.all([
+      this.prisma.savingsDeposit.count({
+        where: { walletId: id, status: 'ACTIVE' }
+      }),
+      this.prisma.portfolioAsset.count({
+        where: { walletId: id }
+      })
+    ]);
+
+    if (activeSavings > 0 || activeAssets > 0) {
+      throw new BadRequestException(
+        `Không thể xóa ví này vì đang có ${activeSavings} khoản tiết kiệm và ${activeAssets} tài sản đầu tư đang liên kết. Vui lòng chuyển hoặc xóa chúng trước.`
+      );
+    }
+
     await this.prisma.wallet.delete({ where: { id } });
     return { message: 'Wallet deleted' };
   }

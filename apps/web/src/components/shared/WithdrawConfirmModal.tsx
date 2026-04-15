@@ -3,6 +3,8 @@
 import React from 'react';
 import { CheckCircle2, X } from 'lucide-react';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { useWallets } from '@/hooks/api/useWallets';
+import { formatCurrency } from '@/lib/exchangeRate';
 
 interface WithdrawConfirmModalProps {
   open: boolean;
@@ -17,12 +19,52 @@ export default function WithdrawConfirmModal({
   open,
   onClose,
   onConfirm,
+  defaultWalletId,
+  currency,
   title = 'Xác nhận tất toán',
-  message = 'Bạn có chắc chắn muốn tất toán sổ tiết kiệm này? Tiền gốc và lãi sẽ được cộng lại vào ví của bạn.',
+  message = 'Bạn có chắc chắn muốn tất toán sổ tiết kiệm này? Tiền gốc và lãi sẽ được cộng vào ví của bạn.',
   isLoading = false,
-}: WithdrawConfirmModalProps) {
+}: {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: (targetWalletId?: string) => void;
+  defaultWalletId?: string;
+  currency?: string;
+  title?: string;
+  message?: string;
+  isLoading?: boolean;
+}) {
+  const { data: wallets = [] } = useWallets();
+  const filteredWallets = React.useMemo(() => {
+    if (!currency) return wallets;
+    return wallets.filter(w => w.currency === currency);
+  }, [wallets, currency]);
+
+  const [selectedWalletId, setSelectedWalletId] = React.useState('');
+
+  React.useEffect(() => {
+    if (open) {
+      // 1. If default wallet matches currency, pick it
+      const def = wallets.find(w => w.id === defaultWalletId);
+      if (def && def.currency === currency) {
+        setSelectedWalletId(defaultWalletId || '');
+      } 
+      // 2. Otherwise pick first matching if only one exists
+      else if (filteredWallets.length === 1) {
+        setSelectedWalletId(filteredWallets[0].id);
+      }
+      else {
+        setSelectedWalletId('');
+      }
+    }
+  }, [defaultWalletId, open, currency, wallets, filteredWallets]);
+
   useBodyScrollLock(open);
   if (!open) return null;
+
+  const handleSubmit = () => {
+    onConfirm(selectedWalletId);
+  };
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
@@ -42,6 +84,34 @@ export default function WithdrawConfirmModal({
             </div>
           </div>
 
+          <div className="space-y-3">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Ví nhận tiền</label>
+            <select
+              value={selectedWalletId}
+              onChange={e => setSelectedWalletId(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+            >
+              <option value="">-- Chọn ví {currency} nhận tiền --</option>
+              {filteredWallets.map(w => (
+                <option key={w.id} value={w.id}>
+                  {w.name} ({formatCurrency(w.balance, w.currency as any, false)})
+                </option>
+              ))}
+            </select>
+            {filteredWallets.length === 0 && open && (
+               <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/30">
+                 <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                   Bạn chưa có ví nào thuộc đơn vị tiền tệ <strong>{currency}</strong>. Vui lòng tạo ví mới trước khi tất toán sổ tiết kiệm này để đảm bảo chính xác.
+                 </p>
+               </div>
+            )}
+            {defaultWalletId && !filteredWallets.find(w => w.id === defaultWalletId) && (
+              <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium italic">
+                * Ví gốc của sổ này không cùng đơn vị tiền tệ hoặc không còn tồn tại.
+              </p>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-3 mt-6">
             <button
               onClick={onClose}
@@ -51,8 +121,8 @@ export default function WithdrawConfirmModal({
               Hủy
             </button>
             <button
-              onClick={onConfirm}
-              disabled={isLoading}
+              onClick={handleSubmit}
+              disabled={isLoading || !selectedWalletId}
               className="px-4 py-3 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 active:scale-95 disabled:opacity-50"
             >
               {isLoading ? 'Đang xử lý...' : 'Tất toán'}
