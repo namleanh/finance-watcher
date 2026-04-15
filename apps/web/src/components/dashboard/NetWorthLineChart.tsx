@@ -5,8 +5,6 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { TrendingUp } from 'lucide-react';
 import { useNetWorthHistory } from '@/hooks/api/useAnalytics';
 import { formatCurrency } from '@/lib/exchangeRate';
-import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
-import { Currency } from '@/lib/types';
 
 export default function NetWorthLineChart() {
   const now = new Date();
@@ -15,16 +13,13 @@ export default function NetWorthLineChart() {
   const { data: response, isLoading } = useNetWorthHistory(year);
   const data = response?.data || [];
   const years = [now.getFullYear() - 1, now.getFullYear()];
-  const { fromVND, baseCurrency } = useCurrencyConverter();
-  const bc = baseCurrency as Currency;
-  const fmtCompact = (v: number) => formatCurrency(fromVND(v, bc), bc, true);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-3 text-xs shadow-lg">
           <p className="text-slate-500 dark:text-slate-400 mb-1">{label}</p>
-          <p className="text-indigo-600 dark:text-indigo-400 font-bold">{fmtCompact(payload[0].value)}</p>
+          <p className="text-indigo-600 dark:text-indigo-400 font-bold">{formatCurrency(payload[0].value, 'VND', true)}</p>
         </div>
       );
     }
@@ -74,7 +69,7 @@ export default function NetWorthLineChart() {
               tick={{ fill: '#94a3b8', fontSize: 9 }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={v => fmtCompact(v)}
+              tickFormatter={v => formatCurrency(v, 'VND', true)}
               width={50}
             />
             <Tooltip content={<CustomTooltip />} />

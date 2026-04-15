@@ -241,7 +241,7 @@ function AddDepositModal({ open, onClose }: AddModalProps) {
 export default function SavingsDepositsPage() {
   const { data: deposits = [], isLoading } = useSavingsDeposits();
   const { mutate: deleteDeposit, isPending: isDeleting } = useDeleteSavingsDeposit();
-  const { toBase, baseCurrency } = useCurrencyConverter();
+  const { toVND } = useCurrencyConverter();
   const [showModal, setShowModal] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedDeposit, setSelectedDeposit] = useState<SavingsDeposit | null>(null);
@@ -251,11 +251,11 @@ export default function SavingsDepositsPage() {
 
   const totalDeposited = deposits
     .filter(d => d.status === 'ACTIVE')
-    .reduce((s, d) => s + toBase(d.depositAmount, d.currency as Currency), 0);
+    .reduce((s, d) => s + toVND(d.depositAmount, d.currency as Currency), 0);
     
   const totalInterest = deposits
     .filter(d => d.status === 'ACTIVE')
-    .reduce((s, d) => s + toBase(d.interestEarned, d.currency as Currency), 0);
+    .reduce((s, d) => s + toVND(d.interestEarned, d.currency as Currency), 0);
 
   return (
     <div className="flex flex-col h-full">
@@ -266,14 +266,14 @@ export default function SavingsDepositsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatCard
             title="Tổng đang gửi"
-            value={formatCurrency(totalDeposited, baseCurrency as Currency, false)}
+            value={formatCurrency(totalDeposited, 'VND', false)}
             icon={<Banknote size={20} />}
             gradient="bg-gradient-to-br from-indigo-500 to-violet-600"
             privacyCategory="SAVINGS"
           />
           <StatCard
             title="Tiền lãi dự kiến"
-            value={formatCurrency(totalInterest, baseCurrency as Currency, false)}
+            value={formatCurrency(totalInterest, 'VND', false)}
             icon={<TrendingUp size={20} />}
             gradient="bg-gradient-to-br from-emerald-500 to-teal-600"
             privacyCategory="SAVINGS"

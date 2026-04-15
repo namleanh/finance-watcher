@@ -212,14 +212,14 @@ function WalletModal({ open, onClose, editWallet }: WalletModalProps) {
 export default function WalletsPage() {
   const { data: wallets = [], isLoading } = useWallets();
   const { mutate: deleteWallet, isPending: isDeleting } = useDeleteWallet();
-  const { toBase, baseCurrency } = useCurrencyConverter();
+  const { toVND } = useCurrencyConverter();
   const [showModal, setShowModal] = useState(false);
   const [editWallet, setEditWallet] = useState<WalletType | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedWallet, setSelectedWallet] = useState<WalletType | null>(null);
   const { isCategoryHidden, toggleCategory, toggleIdVisibility, isIdVisible, clearForceVisibleIds } = usePrivacy();
 
-  const totalBalance = wallets.reduce((s, w) => s + toBase(w.balance, w.currency as Currency), 0);
+  const totalBalance = wallets.reduce((s, w) => s + toVND(w.balance, w.currency as Currency), 0);
 
   const handleDelete = () => {
     if (deleteId) {
@@ -238,7 +238,7 @@ export default function WalletsPage() {
           <div className="flex items-center gap-3">
             <div className="text-3xl font-bold">
               <PrivacyMask 
-                value={formatCurrency(totalBalance, baseCurrency as Currency, false)} 
+                value={formatCurrency(totalBalance, 'VND', false)} 
                 category="NET_WORTH" 
               />
             </div>
@@ -362,10 +362,10 @@ export default function WalletsPage() {
                         {isIdVisible(wallet.id) ? <Eye size={15} /> : <EyeOff size={15} />}
                       </button>
                     </div>
-                    {wallet.currency !== baseCurrency && (
+                    {wallet.currency !== 'VND' && (
                       <div className="text-[11px] font-medium text-indigo-500 mt-0.5">
                         ≈ <PrivacyMask 
-                            value={formatCurrency(toBase(wallet.balance, wallet.currency as Currency), baseCurrency as Currency, false)} 
+                            value={toVND(wallet.balance, wallet.currency as Currency).toLocaleString('en-US') + ' VND'} 
                             category="NET_WORTH_DETAILS" 
                             id={wallet.id}
                             showIcon={false}

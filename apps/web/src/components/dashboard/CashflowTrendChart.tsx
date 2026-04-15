@@ -13,8 +13,6 @@ import React, { useState } from 'react';
 import { TrendingUp, ArrowDownLeft, ArrowUpRight, Wallet } from 'lucide-react';
 import { useCashflowTrend } from '@/hooks/api/useAnalytics';
 import { formatCurrency } from '@/lib/exchangeRate';
-import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
-import { Currency } from '@/lib/types';
 
 const RANGES = [
   { label: 'Hôm nay', value: 'TODAY' },
@@ -27,9 +25,6 @@ const RANGES = [
 export default function CashflowTrendChart() {
   const [range, setRange] = useState('TODAY');
   const { data = [], isLoading } = useCashflowTrend(range);
-  const { fromVND, baseCurrency } = useCurrencyConverter();
-  const bc = baseCurrency as Currency;
-  const fmtCompact = (n: number) => formatCurrency(fromVND(n, bc), bc, true);
 
   // Helper to abbreviate large numbers for mobile axis
   const abbreviateNumber = (value: number) => {
@@ -54,7 +49,7 @@ export default function CashflowTrendChart() {
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Thu nhập
               </span>
               <span className="font-bold text-slate-900 dark:text-white">
-                {fmtCompact(income)}
+                {formatCurrency(income, 'VND', true)}
               </span>
             </div>
             <div className="flex items-center justify-between gap-4">
@@ -62,7 +57,7 @@ export default function CashflowTrendChart() {
                 <div className="w-1.5 h-1.5 rounded-full bg-rose-500" /> Chi tiêu
               </span>
               <span className="font-bold text-slate-900 dark:text-white">
-                {fmtCompact(expense)}
+                {formatCurrency(expense, 'VND', true)}
               </span>
             </div>
             <div className="pt-2.5 mt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4">
@@ -70,7 +65,7 @@ export default function CashflowTrendChart() {
                 <Wallet size={12} /> Tài sản
               </span>
               <span className="font-black text-indigo-600 dark:text-indigo-400 text-sm">
-                {fmtCompact(balance)}
+                {formatCurrency(balance, 'VND', true)}
               </span>
             </div>
           </div>

@@ -4,8 +4,6 @@ import React, { useState } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useSpendingByCategory } from '@/hooks/api/useAnalytics';
 import { formatCurrency } from '@/lib/exchangeRate';
-import { useCurrencyConverter } from '@/hooks/useCurrencyConverter';
-import { Currency } from '@/lib/types';
 
 const RADIAN = Math.PI / 180;
 const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
@@ -26,9 +24,6 @@ export default function SpendingPieChart() {
   const [year] = useState(now.getFullYear());
 
   const { data = [], isLoading } = useSpendingByCategory(year, month + 1);
-  const { fromVND, baseCurrency } = useCurrencyConverter();
-  const bc = baseCurrency as Currency;
-  const fmtCompact = (v: number) => formatCurrency(fromVND(v, bc), bc, true);
   const total = data.reduce((s: any, d: any) => s + d.value, 0);
 
   const monthNames = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
@@ -38,7 +33,7 @@ export default function SpendingPieChart() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="font-semibold text-slate-900 dark:text-white">Chi tiêu theo danh mục</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Tổng: {fmtCompact(total)}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Tổng: {formatCurrency(total, 'VND', true)}</p>
         </div>
         <select
           value={month}
@@ -80,7 +75,7 @@ export default function SpendingPieChart() {
               itemStyle={{ color: 'var(--color-text, #e2e8f0)' }}
               formatter={(value: any, name: any) => {
                 const percent = total > 0 ? ((value as number) / total * 100).toFixed(1) : 0;
-                return [`${fmtCompact(value as number)} (${percent}%)`, name];
+                return [`${formatCurrency(value as number, 'VND', true)} (${percent}%)`, name];
               }}
             />
             <Legend
