@@ -53,12 +53,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       >
         {/* Logo & Mobile Close */}
         <div className={`flex items-center justify-between px-4 py-5 ${collapsed ? 'justify-center' : ''}`}>
-          <div onClick={() => { router.push('/'); onClose?.(); }} className={`flex items-center gap-3 transition-transform duration-100 active:scale-102 cursor-pointer`}>
+          <Link 
+            href="/" 
+            onClick={onClose}
+            className={`flex items-center gap-3 transition-transform duration-100 active:scale-102 cursor-pointer`}
+          >
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0">
               <Wallet size={16} className="text-white" />
             </div>
             {!collapsed && <span className="font-bold text-slate-900 dark:text-white text-sm tracking-wide">FinanceWatcher</span>}
-          </div>
+          </Link>
           
           <button onClick={onClose} className="md:hidden p-1 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
             <X size={20} />
