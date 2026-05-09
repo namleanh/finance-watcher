@@ -133,11 +133,11 @@ export default function CashflowTrendChart() {
                 width={40}
               />
               
-              <Tooltip 
-                content={<CustomTooltip />} 
-                cursor={{ fill: 'rgba(99, 102, 241, 0.04)' }} 
-                allowEscapeViewBox={{ x: true, y: true }}
-              />
+<Tooltip 
+  content={<CustomTooltip />} 
+  cursor={{ fill: 'rgba(99, 102, 241, 0.04)' }} 
+  allowEscapeViewBox={{ x: false, y: true }}
+/>
               
               <Bar 
                 yAxisId="left"
