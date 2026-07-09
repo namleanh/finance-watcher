@@ -7,13 +7,19 @@ import { formatCurrency } from '@/lib/exchangeRate';
 import { StatCard } from '@/components/shared/StatCard';
 import { usePrivacy } from '@/context/PrivacyContext';
 
-export default function OverviewCards() {
-  const { data: stats, isLoading } = useDashboardSummary();
+interface OverviewCardsProps {
+  selectedWallet?: string | null;
+}
+
+export default function OverviewCards({ selectedWallet }: OverviewCardsProps) {
+  const { data: stats, isLoading } = useDashboardSummary(selectedWallet);
+
+  const isFiltered = !!selectedWallet;
 
   if (isLoading || !stats) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[...Array(4)].map((_, i) => (
+      <div className={`grid grid-cols-1 gap-4 ${isFiltered ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-4'}`}>
+        {[...Array(isFiltered ? 2 : 4)].map((_, i) => (
           <div key={i} className="h-28 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 animate-pulse"></div>
         ))}
       </div>
@@ -21,17 +27,21 @@ export default function OverviewCards() {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className={`grid grid-cols-1 gap-4 ${isFiltered ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-4'}`}>
       <StatCard
-        title="Tổng tài sản"
-        value={formatCurrency(stats.totalAssets, 'VND', false)}
+        title={isFiltered && stats.wallet ? `Số dư ${stats.wallet.name}` : "Tổng tài sản"}
+        value={formatCurrency(
+          isFiltered && stats.wallet ? stats.wallet.balance : stats.totalAssets,
+          isFiltered && stats.wallet ? stats.wallet.currency : 'VND',
+          false
+        )}
         icon={<TrendingUp size={20} />}
         gradient="bg-gradient-to-br from-indigo-500 to-violet-600"
-        sub="Tổng tích lũy"
+        sub={isFiltered && stats.wallet ? `Loại ví: ${stats.wallet.type}` : "Tổng tích lũy"}
         privacyCategory="NET_WORTH"
       />
       <StatCard
-        title="Chi tiêu tháng này"
+        title={isFiltered ? "Chi tiêu ví này" : "Chi tiêu tháng này"}
         value={formatCurrency(stats.thisMonth.expense, 'VND', false)}
         change={stats.thisMonth.expenseChange}
         icon={<TrendingDown size={20} />}
@@ -40,23 +50,27 @@ export default function OverviewCards() {
         privacyCategory="EXPENSE"
         subPrivacyCategory="INCOME"
       />
-      <StatCard
-        title="Tổng tiết kiệm"
-        value={formatCurrency(stats.totalDeposits, 'VND', false)}
-        icon={<PiggyBank size={20} />}
-        gradient="bg-gradient-to-br from-emerald-500 to-teal-600"
-        sub={`Tiến độ mục tiêu: ${stats.savingPercent.toFixed(0)}%`}
-        privacyCategory="SAVINGS"
-        href="/savings"
-      />
-      <StatCard
-        title="Danh mục đầu tư"
-        value={formatCurrency(stats.portfolioValue, 'VND', false)}
-        icon={<Briefcase size={20} />}
-        gradient="bg-gradient-to-br from-amber-500 to-orange-600"
-        privacyCategory="INVESTMENTS"
-        href="/portfolio"
-      />
+      {!isFiltered && (
+        <>
+          <StatCard
+            title="Tổng tiết kiệm"
+            value={formatCurrency(stats.totalDeposits, 'VND', false)}
+            icon={<PiggyBank size={20} />}
+            gradient="bg-gradient-to-br from-emerald-500 to-teal-600"
+            sub={`Tiến độ mục tiêu: ${stats.savingPercent.toFixed(0)}%`}
+            privacyCategory="SAVINGS"
+            href="/savings"
+          />
+          <StatCard
+            title="Danh mục đầu tư"
+            value={formatCurrency(stats.portfolioValue, 'VND', false)}
+            icon={<Briefcase size={20} />}
+            gradient="bg-gradient-to-br from-amber-500 to-orange-600"
+            privacyCategory="INVESTMENTS"
+            href="/portfolio"
+          />
+        </>
+      )}
     </div>
   );
 }

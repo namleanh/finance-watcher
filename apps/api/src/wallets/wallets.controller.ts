@@ -9,8 +9,10 @@ export class WalletsController {
   constructor(private readonly walletsService: WalletsService) {}
 
   @Get()
-  findAll(@Request() req) {
-    return this.walletsService.findAll(req.user.id);
+  async findAll(@Request() req) {
+    const wallets = await this.walletsService.findAll(req.user.id);
+    console.log('Wallets fetched:', wallets); // Debugging line
+    return wallets;
   }
 
   @Get(':id')

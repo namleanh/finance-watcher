@@ -22,9 +22,9 @@ const RANGES = [
   { label: '1Y', value: '1Y' },
 ];
 
-export default function CashflowTrendChart() {
+export default function CashflowTrendChart({ selectedWallet }: { selectedWallet?: string | null }) {
   const [range, setRange] = useState('TODAY');
-  const { data = [], isLoading } = useCashflowTrend(range);
+  const { data = [], isLoading } = useCashflowTrend(range, selectedWallet);
 
   // Helper to abbreviate large numbers for mobile axis
   const abbreviateNumber = (value: number) => {

@@ -8,8 +8,8 @@ export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Get('dashboard')
-  getDashboard(@Request() req) {
-    return this.analyticsService.getDashboard(req.user.id);
+  getDashboard(@Query('walletId') walletId: string, @Request() req) {
+    return this.analyticsService.getDashboard(req.user.id, walletId);
   }
 
   @Get('net-worth')
@@ -22,15 +22,20 @@ export class AnalyticsController {
   getSpendingByCategory(
     @Query('year') year: string,
     @Query('month') month: string,
+    @Query('walletId') walletId: string,
     @Request() req,
   ) {
     const y = parseInt(year) || new Date().getFullYear();
     const m = parseInt(month) || new Date().getMonth() + 1;
-    return this.analyticsService.getSpendingByCategory(req.user.id, y, m);
+    return this.analyticsService.getSpendingByCategory(req.user.id, y, m, walletId);
   }
 
   @Get('cashflow')
-  getCashflowTrend(@Query('range') range: '1D' | '1W' | '1M' | '1Y', @Request() req) {
-    return this.analyticsService.getCashflowTrend(req.user.id, range || '1M');
+  getCashflowTrend(
+    @Query('range') range: '1D' | '1W' | '1M' | '1Y',
+    @Query('walletId') walletId: string,
+    @Request() req,
+  ) {
+    return this.analyticsService.getCashflowTrend(req.user.id, range || '1M', walletId);
   }
 }

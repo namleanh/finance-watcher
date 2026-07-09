@@ -8,7 +8,7 @@ export class AnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
 
   // ── Dashboard Overview ──────────────────────────────────────
-  async getDashboard(userId: string) {
+  async getDashboard(userId: string, walletId?: string) {
     const now = new Date();
     const thisMonthStart = startOfMonth(now);
     const thisMonthEnd = endOfMonth(now);
@@ -17,11 +17,11 @@ export class AnalyticsService {
 
     const [periodTxns, portfolioAssets, goalsAgg, wallets, savingsDeposits, marketData] = await Promise.all([
       this.prisma.transaction.findMany({
-        where: { userId, date: { gte: lastMonthStart } },
+        where: { userId, date: { gte: lastMonthStart }, ...(walletId && { walletId }) },
         select: { type: true, amount: true, date: true },
       }),
       this.prisma.portfolioAsset.findMany({
-        where: { userId },
+        where: { userId, ...(walletId && { walletId }) },
         select: { units: true, currentPrice: true, currency: true, ticker: true },
       }),
       this.prisma.savingsGoal.aggregate({
@@ -29,11 +29,11 @@ export class AnalyticsService {
         _sum: { currentAmount: true, targetAmount: true },
       }),
       this.prisma.wallet.findMany({
-        where: { userId },
-        select: { balance: true, currency: true },
+        where: { userId, ...(walletId && { id: walletId }) },
+        select: { id: true, name: true, balance: true, currency: true, type: true },
       }),
       this.prisma.savingsDeposit.findMany({
-        where: { userId, status: 'ACTIVE' },
+        where: { userId, status: 'ACTIVE', ...(walletId && { walletId }) },
         select: { depositAmount: true, interestRate: true, termMonths: true, maturityDate: true },
       }),
       this.prisma.marketData.findMany({
@@ -54,8 +54,8 @@ export class AnalyticsService {
 
     const sumByType = (txns: any[], type: string, start?: Date, end?: Date) =>
       txns
-        .filter(t => t.type === type && (!start || new Date(t.date) >= start) && (!end || new Date(t.date) <= end))
-        .reduce((s, t) => s + Number(t.amount), 0);
+          .filter(t => t.type === type && (!start || new Date(t.date) >= start) && (!end || new Date(t.date) <= end))
+          .reduce((s, t) => s + Number(t.amount), 0);
 
     const income = sumByType(periodTxns, 'INCOME', thisMonthStart, thisMonthEnd);
     const expense = sumByType(periodTxns, 'EXPENSE', thisMonthStart, thisMonthEnd);
@@ -83,8 +83,8 @@ export class AnalyticsService {
       return sum + (Number(w.balance) * rate);
     }, 0);
 
-    const totalGoalCurrent = Number(goalsAgg._sum?.currentAmount || 0);
-    const totalGoalTarget = Number(goalsAgg._sum?.targetAmount || 0);
+    const totalGoalCurrent = walletId ? 0 : Number(goalsAgg._sum?.currentAmount || 0);
+    const totalGoalTarget = walletId ? 0 : Number(goalsAgg._sum?.targetAmount || 0);
 
     const totalDeposits = savingsDeposits.reduce((s, d) => {
       const principal = Number(d.depositAmount);
@@ -110,6 +110,13 @@ export class AnalyticsService {
       portfolioValue,
       totalDeposits,
       savingPercent: totalGoalTarget > 0 ? (totalGoalCurrent / totalGoalTarget) * 100 : 0,
+      wallet: wallets[0] ? {
+        id: wallets[0].id,
+        name: decryptNote(wallets[0].name, userId),
+        balance: Number(wallets[0].balance),
+        currency: wallets[0].currency,
+        type: wallets[0].type,
+      } : null,
     };
   }
 
@@ -144,12 +151,12 @@ export class AnalyticsService {
   }
 
   // ── Spending by Category (pie chart data) ───────────────────
-  async getSpendingByCategory(userId: string, year: number, month: number) {
+  async getSpendingByCategory(userId: string, year: number, month: number, walletId?: string) {
     const start = startOfMonth(new Date(year, month - 1));
     const end = endOfMonth(new Date(year, month - 1));
 
     const txns = await this.prisma.transaction.findMany({
-      where: { userId, type: 'EXPENSE', date: { gte: start, lte: end } },
+      where: { userId, type: 'EXPENSE', date: { gte: start, lte: end }, ...(walletId && { walletId }) },
       select: { category: true, amount: true },
     });
 
@@ -168,7 +175,7 @@ export class AnalyticsService {
   }
 
   // ── Cashflow Trend (dynamic ranges) ───────────────────────
-  async getCashflowTrend(userId: string, range: '1D' | '1W' | '1M' | '1Y' = '1M') {
+  async getCashflowTrend(userId: string, range: '1D' | '1W' | '1M' | '1Y' = '1M', walletId?: string) {
     const now = new Date();
     let start: Date;
     let buckets: { label: string; start: Date; end: Date }[] = [];
@@ -218,10 +225,10 @@ export class AnalyticsService {
 
     // 1. Get current total assets (snapshot)
     const [wallets, portfolioAssets, goalsAgg, savingsDeposits, marketData] = await Promise.all([
-      this.prisma.wallet.findMany({ where: { userId }, select: { balance: true, currency: true } }),
-      this.prisma.portfolioAsset.findMany({ where: { userId }, select: { units: true, currentPrice: true, currency: true, ticker: true } }),
+      this.prisma.wallet.findMany({ where: { userId, ...(walletId && { id: walletId }) }, select: { balance: true, currency: true } }),
+      this.prisma.portfolioAsset.findMany({ where: { userId, ...(walletId && { walletId }) }, select: { units: true, currentPrice: true, currency: true, ticker: true } }),
       this.prisma.savingsGoal.aggregate({ where: { userId }, _sum: { currentAmount: true } }),
-      this.prisma.savingsDeposit.findMany({ where: { userId, status: 'ACTIVE' }, select: { depositAmount: true, interestRate: true, termMonths: true, maturityDate: true } }),
+      this.prisma.savingsDeposit.findMany({ where: { userId, status: 'ACTIVE', ...(walletId && { walletId }) }, select: { depositAmount: true, interestRate: true, termMonths: true, maturityDate: true } }),
       this.prisma.marketData.findMany({ where: { OR: [{ type: 'CURRENCY' }, { type: 'GOLD' }] } }),
     ]);
 
@@ -236,7 +243,7 @@ export class AnalyticsService {
     }, 0);
 
     const walletBalance = wallets.reduce((sum, w) => sum + (Number(w.balance) * (rates[w.currency] || 1)), 0);
-    const goalBalance = Number(goalsAgg._sum?.currentAmount || 0);
+    const goalBalance = walletId ? 0 : Number(goalsAgg._sum?.currentAmount || 0);
     const depositBalance = savingsDeposits.reduce((s, d) => {
       const principal = Number(d.depositAmount);
       const interest = new Date(d.maturityDate) <= now ? Math.round(principal * (Number(d.interestRate) / 100) * (d.termMonths / 12)) : 0;
@@ -247,7 +254,7 @@ export class AnalyticsService {
 
     // 2. Get all transactions from start to now to calculate history
     const allTxnsSinceStart = await this.prisma.transaction.findMany({
-      where: { userId, date: { gte: start } },
+      where: { userId, date: { gte: start }, ...(walletId && { walletId }) },
       select: { type: true, amount: true, date: true },
       orderBy: { date: 'asc' },
     });

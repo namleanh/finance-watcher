@@ -27,7 +27,7 @@ const TYPE_LABELS: Record<string, string> = {
   INVESTMENT: 'Đầu tư',
 };
 
-export default function TransactionTable() {
+export default function TransactionTable({ selectedWallet }: { selectedWallet?: string | null }) {
   const { isCategoryHidden, toggleCategory, toggleIdVisibility, isIdVisible, clearForceVisibleIds } = usePrivacy();
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
@@ -47,6 +47,7 @@ export default function TransactionTable() {
     isLoading 
   } = useInfiniteTransactions({
     limit: 20,
+    ...(selectedWallet && { walletId: selectedWallet }),
     ...(showFilters && filterType !== 'all' && { type: filterType }),
     ...(showFilters && filterCat && { category: filterCat }),
     ...(showFilters && dateFrom && { startDate: dateFrom }),
